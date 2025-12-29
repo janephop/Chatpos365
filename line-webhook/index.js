@@ -384,6 +384,32 @@ app.get('/api/download/:filename', (req, res) => {
   res.download(filePath, downloadName);
 });
 
+// LINE Webhook middleware MUST come BEFORE express.json()
+// Because LINE middleware needs raw body (Buffer) to verify signature
+app.use('/webhook/line', (req, res, next) => {
+  // Check if configuration is set
+  if (!config.channelAccessToken || !config.channelSecret) {
+    console.error('❌ LINE configuration not set!');
+    return res.status(400).json({ 
+      error: 'LINE configuration not set. Please configure via the frontend first.' 
+    });
+  }
+  
+  console.log('🔐 Verifying LINE signature...');
+  console.log('Channel Secret (first 10 chars):', config.channelSecret.substring(0, 10) + '...');
+  
+  // Apply LINE middleware with current config (it handles raw body internally)
+  const lineMiddleware = middleware(config);
+  lineMiddleware(req, res, (err) => {
+    if (err) {
+      console.error('❌ LINE Signature Verification Failed:', err.message);
+      return res.status(400).json({ error: 'Invalid signature' });
+    }
+    console.log('✅ LINE Signature Verified!');
+    next();
+  });
+});
+
 // Express JSON middleware for API endpoints (not webhook)
 // เพิ่ม limit เป็น 50MB เพื่อรองรับข้อมูลบิลจำนวนมาก
 app.use(express.json({ limit: '50mb' }));
@@ -982,32 +1008,6 @@ app.post('/api/config/update', (req, res) => {
       error: 'Failed to save configuration file' 
     });
   }
-});
-
-// Middleware to verify LINE signature (dynamic config)
-// NOTE: LINE middleware must come BEFORE express.json() for this route
-app.use('/webhook/line', (req, res, next) => {
-  // Check if configuration is set
-  if (!config.channelAccessToken || !config.channelSecret) {
-    console.error('❌ LINE configuration not set!');
-    return res.status(400).json({ 
-      error: 'LINE configuration not set. Please configure via the frontend first.' 
-    });
-  }
-  
-  console.log('🔐 Verifying LINE signature...');
-  console.log('Channel Secret (first 10 chars):', config.channelSecret.substring(0, 10) + '...');
-  
-  // Apply LINE middleware with current config (it handles raw body internally)
-  const lineMiddleware = middleware(config);
-  lineMiddleware(req, res, (err) => {
-    if (err) {
-      console.error('❌ LINE Signature Verification Failed:', err.message);
-      return res.status(400).json({ error: 'Invalid signature' });
-    }
-    console.log('✅ LINE Signature Verified!');
-    next();
-  });
 });
 
 // Webhook endpoint
