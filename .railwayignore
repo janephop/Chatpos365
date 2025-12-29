@@ -1,0 +1,60 @@
+# Railway ignore file
+# Files and folders to exclude from Railway deployment
+
+# Documentation
+*.md
+docs/
+*.bat
+*.ps1
+*.exe
+
+# Cloudflare tunnel files
+cloudflared.exe
+cloudflare-tunnel-config.yml
+line-webhook/cloudflared
+line-webhook/config.yml
+
+# Development files
+*.txt
+New Text Document.txt
+
+# Temporary files
+cd
+cls
+del
+dir
+query
+
+# Environment files (use Railway Environment Variables instead)
+.env
+.env.local
+.env.*.local
+line-webhook/.env
+
+# Database files (will be created on Railway)
+line-webhook/data/*.db
+line-webhook/data/*.db-shm
+line-webhook/data/*.db-wal
+
+# Uploads (will be created on Railway)
+line-webhook/uploads/*
+
+# Node modules (will be installed on Railway)
+node_modules/
+line-webhook/node_modules/
+
+# Git files
+.git/
+.gitignore
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+

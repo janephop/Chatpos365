@@ -1,0 +1,7 @@
+tunnel: line-chat
+credentials-file: C:\Users\jay_rpn\.cloudflared\line-chat.json
+
+ingress:
+  - hostname: line-chat-backend.trycloudflare.com
+    service: http://localhost:3000
+  - service: http_status:404

@@ -1,0 +1,28 @@
+{
+  "name": "line-webhook-server",
+  "version": "1.0.0",
+  "description": "A Node.js server to handle LINE Messaging API webhooks.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "line",
+    "webhook",
+    "bot"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@line/bot-sdk": "^8.4.1",
+    "archiver": "^7.0.1",
+    "better-sqlite3": "^12.5.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "multer": "^2.0.2",
+    "xlsx": "^0.18.5"
+  }
+}

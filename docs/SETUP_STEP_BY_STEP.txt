@@ -1,0 +1,561 @@
+================================================================================
+  คู่มือตั้งค่าแบบละเอียดทุกขั้นตอน (Step-by-Step)
+  รูปแบบ Text File - อ่านได้ทุกโปรแกรม
+================================================================================
+
+สารบัญ:
+1. สร้าง Cloudflare Account
+2. ดาวน์โหลด Cloudflare Tunnel
+3. ตั้งค่า Cloudflare Tunnel
+4. ตั้งค่า Public Hostname ใน Dashboard
+5. แก้ไขไฟล์ Config
+6. สร้างไฟล์ .env
+7. หา LINE Credentials
+8. เริ่มต้นระบบ
+9. ตั้งค่า LINE Webhook
+10. Troubleshooting
+
+================================================================================
+ขั้นตอนที่ 1: สร้าง Cloudflare Account
+================================================================================
+
+1.1 เปิดเว็บไซต์ Cloudflare
+   - เปิดเบราว์เซอร์ (Chrome, Edge, Firefox)
+   - ไปที่: https://dash.cloudflare.com/sign-up
+   - หรือค้นหา "Cloudflare sign up" ใน Google
+
+1.2 สร้างบัญชี
+   - กรอก Email ที่ต้องการใช้
+   - คลิก "Continue" หรือกด Enter
+   - ใส่ Password (อย่างน้อย 8 ตัวอักษร)
+   - คลิก "Create Account"
+
+1.3 ยืนยัน Email (ถ้ามี)
+   - ตรวจสอบ Email ที่กรอก
+   - คลิกลิงก์ยืนยันใน Email (ถ้ามี)
+
+1.4 เข้าสู่ระบบ
+   - ไปที่: https://dash.cloudflare.com/login
+   - กรอก Email และ Password
+   - คลิก "Log in"
+
+✅ เสร็จแล้ว! ตอนนี้คุณมี Cloudflare Account แล้ว
+
+================================================================================
+ขั้นตอนที่ 2: ดาวน์โหลด Cloudflare Tunnel
+================================================================================
+
+2.1 เปิดหน้า Download
+   - เปิดเบราว์เซอร์
+   - ไปที่: https://github.com/cloudflare/cloudflared/releases
+   - หรือค้นหา "cloudflared releases github" ใน Google
+
+2.2 หาไฟล์สำหรับ Windows
+   - เลื่อนลงไปที่ส่วน "Assets" (คลิก "Assets" เพื่อขยาย)
+   - หาไฟล์: cloudflared-windows-amd64.exe
+   - คลิกขวาที่ไฟล์
+   - เลือก "Save link as..." หรือ "Save target as..."
+
+2.3 บันทึกไฟล์
+   - เลือกโฟลเดอร์ที่ต้องการบันทึก (แนะนำ: Desktop)
+   - เปลี่ยนชื่อไฟล์เป็น: cloudflared.exe
+     (ลบ -windows-amd64 ออก เหลือแค่ cloudflared.exe)
+   - คลิก "Save"
+
+2.4 ย้ายไฟล์ไปโฟลเดอร์โปรเจกต์
+   - เปิด File Explorer (กด Windows + E)
+   - ไปที่โฟลเดอร์:
+     C:\Users\jay_rpn\Documents\Project Big\Project Pos Chat\line chat
+   - Copy ไฟล์ cloudflared.exe จาก Desktop
+   - Paste ลงในโฟลเดอร์โปรเจกต์
+
+✅ เสร็จแล้ว! ตอนนี้มีไฟล์ cloudflared.exe ในโฟลเดอร์โปรเจกต์แล้ว
+
+================================================================================
+ขั้นตอนที่ 3: ตั้งค่า Cloudflare Tunnel
+================================================================================
+
+3.1 เปิด Command Prompt หรือ PowerShell
+   วิธีที่ 1: ใช้ File Explorer
+   - เปิด File Explorer
+   - ไปที่โฟลเดอร์โปรเจกต์
+   - คลิกที่แถบ Address bar (ที่แสดง path)
+   - พิมพ์: cmd แล้วกด Enter
+     หรือพิมพ์: powershell แล้วกด Enter
+
+   วิธีที่ 2: ใช้ Run
+   - กด Windows + R
+   - พิมพ์: cmd แล้วกด Enter
+
+3.2 เปลี่ยนไปที่โฟลเดอร์โปรเจกต์
+   ใน Command Prompt หรือ PowerShell พิมพ์:
+   
+   cd "C:\Users\jay_rpn\Documents\Project Big\Project Pos Chat\line chat"
+   
+   กด Enter
+
+3.3 Login เข้า Cloudflare
+   พิมพ์คำสั่ง:
+   
+   cloudflared.exe tunnel login
+   
+   กด Enter
+
+   สิ่งที่เกิดขึ้น:
+   - จะเปิดเบราว์เซอร์อัตโนมัติ
+   - ถ้าไม่เปิด ให้ Copy URL ที่แสดงใน Terminal แล้วเปิดในเบราว์เซอร์เอง
+
+   ในเบราว์เซอร์:
+   - Login เข้า Cloudflare (ถ้ายังไม่ได้ login)
+   - จะเห็นหน้า "Authorize Cloudflare Tunnel"
+   - สิ่งสำคัญ: หน้านี้จะถามให้เลือก Zone (domain)
+     ถ้าไม่มี Zone ให้เลือก:
+       - มองหาปุ่ม "Skip" หรือ "Continue without zone" หรือ "Skip this step"
+       - คลิกปุ่ม Skip เพื่อข้ามไป
+       - หรือ: ปิดหน้าต่างนี้ แล้วกลับไปที่ Terminal
+     ถ้ามี Zone: เลือก Zone ที่ต้องการ (แต่สำหรับ trycloudflare.com ไม่จำเป็น)
+   - ถ้าเห็นปุ่ม "Authorize" หรือ "Allow" → คลิก
+   - จะเห็นข้อความ "Success!" หรือ "Authorized"
+
+   หมายเหตุ: สำหรับการใช้ trycloudflare.com subdomain ไม่จำเป็นต้องมี Zone
+             ใน Cloudflare Account สามารถข้ามขั้นตอนเลือก Zone ได้เลย
+
+   กลับไปที่ Terminal:
+   - จะเห็นข้อความ "You have successfully logged in"
+   - ✅ Login สำเร็จ!
+
+3.4 สร้าง Tunnel
+   พิมพ์คำสั่ง:
+   
+   cloudflared.exe tunnel create line-chat
+   
+   กด Enter
+
+   สิ่งที่เกิดขึ้น:
+   - จะแสดง Tunnel ID (เป็นตัวอักษรยาวๆ)
+   - จด Tunnel ID ไว้ (หรือไม่จดก็ได้ เพราะเก็บไว้ในไฟล์แล้ว)
+
+   ✅ Tunnel สร้างสำเร็จ!
+
+================================================================================
+ขั้นตอนที่ 4: ตั้งค่า Public Hostname ใน Dashboard
+================================================================================
+
+4.1 เปิด Cloudflare Dashboard
+   - เปิดเบราว์เซอร์
+   - ไปที่: https://one.dash.cloudflare.com/
+   - Login เข้าระบบ (ถ้ายังไม่ได้ login)
+
+4.2 ไปที่หน้า Tunnels
+   - คลิกเมนูด้านซ้าย: "Zero Trust"
+     (ถ้าไม่เห็น ให้คลิก "More products" หรือ "All products" แล้วหา "Zero Trust")
+   - คลิก: "Networks" (ในเมนูด้านซ้าย)
+   - คลิก: "Tunnels" (ในเมนูด้านซ้าย)
+
+4.3 หา Tunnel ที่สร้างไว้
+   - มองหา tunnel ชื่อ "line-chat" ในรายการ
+   - คลิกที่ tunnel "line-chat"
+
+4.4 ไปที่แท็บ Public Hostnames
+   - คลิกแท็บ: "Public Hostnames" (ด้านบน)
+   - จะเห็นรายการ hostname (ถ้ามี) หรือว่างเปล่า
+
+4.5 เพิ่ม Public Hostname สำหรับ Backend
+   - คลิกปุ่ม: "Add a public hostname" (สีฟ้า หรือ "Add hostname")
+   - จะเห็นฟอร์มให้กรอก:
+
+     Subdomain:
+     - พิมพ์: line-chat-backend-12345
+       (เปลี่ยน 12345 เป็นตัวเลขที่ต้องการ เช่น: 12345, 99999, 2024)
+       (หรือใช้ตัวอักษรก็ได้ เช่น: line-chat-backend-abc)
+     
+     Domain:
+     - คลิก dropdown (ลูกศรลง)
+     - เลือก: trycloudflare.com
+       (ถ้าไม่เห็น ให้พิมพ์ trycloudflare.com ในช่อง)
+     
+     Service:
+     - พิมพ์: http://localhost:3000
+       (ต้องพิมพ์ให้ถูกต้อง: http://localhost:3000 ไม่ใช่ https)
+
+   - คลิกปุ่ม: "Add hostname" หรือ "Save"
+
+   ✅ Backend Hostname สร้างสำเร็จ!
+
+   จด URL ที่ได้ไว้:
+   - จะเห็น URL แสดงในรายการ (เช่น: https://line-chat-backend-12345.trycloudflare.com)
+   - Copy URL นี้ไว้ (คลิกขวา → Copy หรือ Select แล้ว Ctrl+C)
+
+4.6 เพิ่ม Public Hostname สำหรับ Frontend
+   - คลิกปุ่ม: "Add a public hostname" อีกครั้ง
+   - กรอกฟอร์ม:
+
+     Subdomain:
+     - พิมพ์: line-chat-frontend-12345
+       (ใช้ตัวเลขเดียวกันกับ Backend เช่น ถ้า Backend เป็น 12345 Frontend ก็เป็น 12345)
+     
+     Domain:
+     - คลิก dropdown
+     - เลือก: trycloudflare.com
+     
+     Service:
+     - พิมพ์: http://localhost:8085
+       (ต้องพิมพ์ให้ถูกต้อง: http://localhost:8085)
+
+   - คลิกปุ่ม: "Add hostname" หรือ "Save"
+
+   ✅ Frontend Hostname สร้างสำเร็จ!
+
+   จด URL ที่ได้ไว้:
+   - จะเห็น URL แสดงในรายการ (เช่น: https://line-chat-frontend-12345.trycloudflare.com)
+   - Copy URL นี้ไว้
+
+================================================================================
+ขั้นตอนที่ 5: แก้ไขไฟล์ Config
+================================================================================
+
+5.1 เปิดโฟลเดอร์โปรเจกต์
+   - เปิด File Explorer (Windows + E)
+   - ไปที่โฟลเดอร์:
+     C:\Users\jay_rpn\Documents\Project Big\Project Pos Chat\line chat
+
+5.2 หาไฟล์ Config
+   ถ้ามีไฟล์ cloudflare-tunnel-config.yml อยู่แล้ว:
+   - ข้ามไปขั้นตอน 5.3
+
+   ถ้ายังไม่มี:
+   - หาไฟล์: cloudflare-tunnel-config.yml.example
+   - Copy ไฟล์ (คลิกขวา → Copy หรือ Ctrl+C)
+   - Paste (คลิกขวา → Paste หรือ Ctrl+V)
+   - เปลี่ยนชื่อไฟล์ที่ Copy มา:
+     คลิกขวาที่ไฟล์ → Rename
+     ลบ .example ออก
+     เหลือแค่: cloudflare-tunnel-config.yml
+
+5.3 เปิดไฟล์ Config
+   - คลิกขวาที่ไฟล์ cloudflare-tunnel-config.yml
+   - เลือก "Open with" → "Notepad" หรือ "Notepad++"
+     (หรือดับเบิลคลิก Windows จะถามว่าเปิดด้วยอะไร → เลือก Notepad)
+
+5.4 แก้ไข Hostname
+   หา Tunnel ID:
+   - ดูในไฟล์ จะเห็น:
+     tunnel: <TUNNEL_ID>
+   - ถ้ายังเป็น <TUNNEL_ID>:
+     ต้องหา Tunnel ID ก่อน:
+       เปิด Command Prompt
+       พิมพ์: cloudflared.exe tunnel list
+       จะเห็น Tunnel ID (ตัวอักษรยาวๆ)
+       Copy Tunnel ID
+     แทนที่ <TUNNEL_ID> ด้วย Tunnel ID ที่ Copy มา
+
+   แก้ไข Hostname Backend:
+   - หาบรรทัด:
+     - hostname: line-chat-backend-xxxxx.trycloudflare.com
+   - แทนที่ xxxxx ด้วยตัวเลขที่ตั้งไว้ใน Dashboard
+     ตัวอย่าง: ถ้าใน Dashboard เป็น line-chat-backend-12345.trycloudflare.com
+     แก้เป็น:
+     - hostname: line-chat-backend-12345.trycloudflare.com
+
+   แก้ไข Hostname Frontend:
+   - หาบรรทัด:
+     - hostname: line-chat-frontend-xxxxx.trycloudflare.com
+   - แทนที่ xxxxx ด้วยตัวเลขที่ตั้งไว้ใน Dashboard
+     ตัวอย่าง: ถ้าใน Dashboard เป็น line-chat-frontend-12345.trycloudflare.com
+     แก้เป็น:
+     - hostname: line-chat-frontend-12345.trycloudflare.com
+
+5.5 บันทึกไฟล์
+   - กด Ctrl + S (หรือ File → Save)
+   - ปิด Notepad
+
+✅ แก้ไข Config เสร็จแล้ว!
+
+================================================================================
+ขั้นตอนที่ 6: สร้างไฟล์ .env
+================================================================================
+
+6.1 สร้างไฟล์ .env สำหรับ Frontend
+   - เปิด File Explorer
+   - ไปที่โฟลเดอร์โปรเจกต์
+   - คลิกขวาในพื้นที่ว่าง → New → Text Document
+   - เปลี่ยนชื่อเป็น: .env
+     (สำคัญ: ต้องมีจุด (.) นำหน้า)
+     ถ้า Windows ซ่อน extension:
+       ไปที่ View → Show → File name extensions (เปิด)
+       แล้วเปลี่ยนชื่อเป็น .env (ไม่มี .txt)
+
+   ถ้า Windows ไม่ให้เปลี่ยนชื่อ:
+   - ใช้วิธีนี้:
+     1. สร้างไฟล์ชื่อ env.txt
+     2. เปิด Command Prompt ในโฟลเดอร์นั้น
+     3. พิมพ์: ren env.txt .env
+     4. กด Enter
+
+6.2 แก้ไขไฟล์ .env (Frontend)
+   - เปิดไฟล์ .env ด้วย Notepad
+   - พิมพ์ (หรือ Copy-Paste):
+     VITE_API_URL=https://line-chat-backend-12345.trycloudflare.com
+   - แทนที่ 12345 ด้วยตัวเลขที่ตั้งไว้ใน Dashboard
+     ตัวอย่าง: ถ้า Backend URL เป็น https://line-chat-backend-99999.trycloudflare.com
+     พิมพ์:
+     VITE_API_URL=https://line-chat-backend-99999.trycloudflare.com
+   - บันทึก (Ctrl + S)
+   - ปิด Notepad
+
+✅ Frontend .env เสร็จแล้ว!
+
+6.3 สร้างไฟล์ .env สำหรับ Backend
+   - เปิด File Explorer
+   - ไปที่โฟลเดอร์: line-webhook (ในโฟลเดอร์โปรเจกต์)
+   - คลิกขวา → New → Text Document
+   - เปลี่ยนชื่อเป็น: .env
+
+6.4 แก้ไขไฟล์ .env (Backend)
+   - เปิดไฟล์ line-webhook\.env ด้วย Notepad
+   - พิมพ์ (หรือ Copy-Paste):
+     LINE_CHANNEL_ACCESS_TOKEN=your_token_here
+     LINE_CHANNEL_SECRET=your_secret_here
+     PORT=3000
+   - ยังไม่ต้องแก้ไข Token และ Secret ตอนนี้ (จะทำในขั้นตอนถัดไป)
+   - บันทึก (Ctrl + S)
+   - ปิด Notepad
+
+✅ Backend .env เสร็จแล้ว! (แต่ยังต้องใส่ Token และ Secret)
+
+================================================================================
+ขั้นตอนที่ 7: หา LINE Credentials
+================================================================================
+
+7.1 เปิด LINE Developers Console
+   - เปิดเบราว์เซอร์
+   - ไปที่: https://developers.line.biz/console/
+   - Login เข้าระบบ (ใช้ LINE Account)
+
+7.2 เลือก Provider และ Channel
+   - คลิกที่ Provider (ด้านบนซ้าย)
+     (ถ้ามีหลาย Provider ให้เลือก Provider ที่ต้องการ)
+   - คลิกที่ Channel ที่ต้องการใช้
+     (ถ้ายังไม่มี Channel:
+       คลิก "Create" หรือ "New channel"
+       เลือก "Messaging API"
+       กรอกข้อมูลตามที่ต้องการ
+       คลิก "Create")
+
+7.3 หา Channel Access Token
+   - คลิกแท็บ: "Messaging API" (ด้านบน)
+   - เลื่อนลงไปที่ส่วน "Channel access token"
+   - ดู Token ที่แสดงอยู่:
+     ถ้ามี Token อยู่แล้ว → Copy Token (คลิกขวา → Copy หรือ Select แล้ว Ctrl+C)
+     ถ้ายังไม่มี Token:
+       คลิก "Issue" หรือ "Generate"
+       จะแสดง Token ขึ้นมา
+       Copy Token ทันที (เพราะจะแสดงแค่ครั้งเดียว!)
+
+7.4 หา Channel Secret
+   - คลิกแท็บ: "Basic settings" (ด้านบน)
+   - เลื่อนลงไปที่ส่วน "Channel secret"
+   - คลิกปุ่ม: "Show" หรือ "Reveal" (ถ้า Token ถูกซ่อน)
+   - Copy Channel Secret (คลิกขวา → Copy)
+
+7.5 ใส่ Token และ Secret ในไฟล์ .env
+   - เปิดไฟล์ line-webhook\.env ด้วย Notepad
+   - แทนที่ your_token_here ด้วย Token ที่ Copy มา:
+     LINE_CHANNEL_ACCESS_TOKEN=U1234567890abcdefghijklmnopqrstuvwxyz...
+   - แทนที่ your_secret_here ด้วย Secret ที่ Copy มา:
+     LINE_CHANNEL_SECRET=1234567890abcdefghijklmnopqrstuvwxyz...
+   - บันทึก (Ctrl + S)
+   - ปิด Notepad
+
+✅ LINE Credentials ตั้งค่าเสร็จแล้ว!
+
+================================================================================
+ขั้นตอนที่ 8: เริ่มต้นระบบ
+================================================================================
+
+8.1 เปิด Command Prompt หรือ PowerShell
+   - เปิด File Explorer
+   - ไปที่โฟลเดอร์โปรเจกต์
+   - คลิกที่แถบ Address bar
+   - พิมพ์: cmd แล้วกด Enter
+
+8.2 เริ่มต้น Backend Server
+   เปิด Terminal ใหม่ (Terminal 1):
+   - ใน Command Prompt พิมพ์:
+     cd line-webhook
+     กด Enter
+   - พิมพ์:
+     npm start
+     กด Enter
+   - รอจนเห็นข้อความ:
+     Server is running on port 3000
+     หรือ
+     Listening on port 3000
+
+   ✅ Backend ทำงานแล้ว! (อย่าปิด Terminal นี้)
+
+8.3 เริ่มต้น Frontend Server
+   เปิด Terminal ใหม่ (Terminal 2):
+   - กด Windows + R
+   - พิมพ์: cmd แล้วกด Enter
+   - พิมพ์:
+     cd "C:\Users\jay_rpn\Documents\Project Big\Project Pos Chat\line chat"
+     กด Enter
+   - พิมพ์:
+     npm run dev
+     กด Enter
+   - รอจนเห็นข้อความ:
+     Local:   http://localhost:8085
+     หรือ URL อื่นๆ
+
+   ✅ Frontend ทำงานแล้ว! (อย่าปิด Terminal นี้)
+
+8.4 เริ่มต้น Cloudflare Tunnel
+   เปิด Terminal ใหม่ (Terminal 3):
+   - กด Windows + R
+   - พิมพ์: cmd แล้วกด Enter
+   - พิมพ์:
+     cd "C:\Users\jay_rpn\Documents\Project Big\Project Pos Chat\line chat"
+     กด Enter
+   - พิมพ์:
+     cloudflared.exe tunnel run line-chat --config cloudflare-tunnel-config.yml
+     กด Enter
+   - รอจนเห็นข้อความแสดง URL
+
+   ✅ Tunnel ทำงานแล้ว! (อย่าปิด Terminal นี้)
+
+================================================================================
+ขั้นตอนที่ 9: ตั้งค่า LINE Webhook
+================================================================================
+
+9.1 เปิด LINE Developers Console
+   - เปิดเบราว์เซอร์
+   - ไปที่: https://developers.line.biz/console/
+   - Login เข้าระบบ
+
+9.2 ไปที่หน้า Webhook Settings
+   - คลิกที่ Provider และ Channel ที่ต้องการ
+   - คลิกแท็บ: "Messaging API" (ด้านบน)
+   - เลื่อนลงไปที่ส่วน "Webhook settings"
+
+9.3 ตั้งค่า Webhook URL
+   - คลิกปุ่ม: "Edit" (ข้าง "Webhook URL")
+   - ใส่ URL:
+     https://line-chat-backend-12345.trycloudflare.com/webhook/line
+     (แทนที่ 12345 ด้วยตัวเลขที่ตั้งไว้ใน Dashboard)
+     (สำคัญ: ต้องมี /webhook/line ต่อท้าย)
+   - คลิกปุ่ม: "Update" หรือ "Save"
+
+9.4 เปิดใช้งาน Webhook
+   - เปิดสวิตช์: "Use webhook" (ให้เป็นสีเขียว/ON)
+   - ปิดสวิตช์: "Enable webhook" (ถ้ามี) → เปิดเป็น ON
+
+9.5 ทดสอบ Webhook
+   - คลิกปุ่ม: "Verify" (ข้าง Webhook URL)
+   - รอจนเห็นข้อความ:
+     "Success" หรือ "Verified" → ✅ สำเร็จ!
+     "Failed" → ดู Troubleshooting ด้านล่าง
+
+✅ LINE Webhook ตั้งค่าเสร็จแล้ว!
+
+================================================================================
+Troubleshooting
+================================================================================
+
+ปัญหา: Tunnel ไม่ทำงาน
+ตรวจสอบ:
+- Backend Server ทำงานอยู่หรือไม่ (Terminal 1)
+- Frontend Server ทำงานอยู่หรือไม่ (Terminal 2)
+- ไฟล์ cloudflare-tunnel-config.yml ถูกต้องหรือไม่
+- Hostname ตรงกับ Dashboard หรือไม่
+
+แก้ไข:
+- ตรวจสอบว่า Backend และ Frontend รันอยู่
+- ตรวจสอบไฟล์ config
+- Restart Tunnel (กด Ctrl+C แล้วรันใหม่)
+
+ปัญหา: Frontend ไม่เชื่อมต่อ Backend
+ตรวจสอบ:
+- ไฟล์ .env (Frontend) มี VITE_API_URL หรือไม่
+- URL ใน .env ถูกต้องหรือไม่ (ต้องเป็น Backend URL)
+- Restart Frontend หลังจากแก้ไข .env
+
+แก้ไข:
+- แก้ไขไฟล์ .env
+- Restart Frontend (กด Ctrl+C แล้วรัน npm run dev ใหม่)
+
+ปัญหา: LINE Webhook ไม่ทำงาน
+ตรวจสอบ:
+- Backend Tunnel ยังทำงานอยู่หรือไม่ (Terminal 3)
+- URL ใน LINE Console ถูกต้องหรือไม่
+- ใช้ HTTPS (ไม่ใช่ HTTP)
+
+แก้ไข:
+- ตรวจสอบว่า Tunnel ยังทำงานอยู่
+- ตรวจสอบ URL ใน LINE Console
+- ตรวจสอบว่า Backend Server ทำงานอยู่
+
+ปัญหา: Login Cloudflare ไม่สำเร็จ
+แก้ไข:
+- Copy URL จาก Terminal
+- เปิดในเบราว์เซอร์เอง
+- Login และ Authorize
+
+ปัญหา: ไม่พบ Tunnel ใน Dashboard
+แก้ไข:
+- ตรวจสอบว่า Login ถูก Account หรือไม่
+- รัน cloudflared.exe tunnel list เพื่อดู Tunnel
+- สร้าง Tunnel ใหม่: cloudflared.exe tunnel create line-chat
+
+================================================================================
+Checklist สรุป
+================================================================================
+
+- [ ] สร้าง Cloudflare Account
+- [ ] ดาวน์โหลด cloudflared.exe
+- [ ] Login Cloudflare (cloudflared.exe tunnel login)
+- [ ] สร้าง Tunnel (cloudflared.exe tunnel create line-chat)
+- [ ] ตั้งค่า Public Hostname (Backend) ใน Dashboard
+- [ ] ตั้งค่า Public Hostname (Frontend) ใน Dashboard
+- [ ] แก้ไข cloudflare-tunnel-config.yml
+- [ ] สร้างไฟล์ .env (Frontend)
+- [ ] สร้างไฟล์ line-webhook\.env (Backend)
+- [ ] หา LINE Channel Access Token
+- [ ] หา LINE Channel Secret
+- [ ] ใส่ Token และ Secret ใน .env
+- [ ] เริ่มต้น Backend Server
+- [ ] เริ่มต้น Frontend Server
+- [ ] เริ่มต้น Cloudflare Tunnel
+- [ ] ตั้งค่า LINE Webhook URL
+- [ ] เปิดใช้งาน Webhook
+- [ ] ทดสอบ Webhook
+
+================================================================================
+ลิงก์สำคัญ
+================================================================================
+
+Cloudflare Sign Up: https://dash.cloudflare.com/sign-up
+Cloudflare Login: https://dash.cloudflare.com/login
+Cloudflare Zero Trust Dashboard: https://one.dash.cloudflare.com/
+Cloudflare Tunnel Releases: https://github.com/cloudflare/cloudflared/releases
+LINE Developers Console: https://developers.line.biz/console/
+LINE Messaging API Docs: https://developers.line.biz/en/docs/messaging-api/
+
+================================================================================
+เสร็จแล้ว!
+================================================================================
+
+ตอนนี้ระบบพร้อมใช้งาน:
+- ✅ Backend URL: https://line-chat-backend-xxxxx.trycloudflare.com
+- ✅ Frontend URL: https://line-chat-frontend-xxxxx.trycloudflare.com
+- ✅ URL คงที่ถาวร - ไม่ต้องเปลี่ยน webhook!
+
+ทดสอบ:
+- เปิด Frontend URL ในเบราว์เซอร์
+- ส่งข้อความไปที่ LINE Official Account
+- ตรวจสอบว่าได้รับข้อความ
+
+================================================================================
+Made with ❤️ - Happy Coding!
+================================================================================
+
