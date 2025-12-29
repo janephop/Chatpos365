@@ -1,0 +1,9 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "node index.js"
+
+[build.nixpacks]
+nixPkgs = ["nodejs-20_x", "python3"]
+
