@@ -42,6 +42,12 @@ const getApiUrl = () => {
     // If VITE_API_URL is not set, user should set it manually
     // Default: assume backend is on different Railway service
     // (User must set VITE_API_URL in Railway environment variables)
+    // For now, if VITE_API_URL is not set, show error message
+    if (!import.meta.env.VITE_API_URL) {
+      console.error('⚠️ VITE_API_URL is not set! Please set it in Railway Variables.');
+      console.error('Frontend URL:', window.location.origin);
+      console.error('Expected Backend URL: https://chatpos365-production.up.railway.app');
+    }
   }
   
   // If external domain (ngrok, cloud, etc.), try to detect backend URL
