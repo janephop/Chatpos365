@@ -936,7 +936,14 @@ app.post('/api/chats/:userId/messages', async (req, res) => {
 });
 
 // API endpoint to upload and send file/image to LINE user
+// DISABLED: Text only mode to save Railway credit
 app.post('/api/chats/:userId/upload', upload.single('file'), async (req, res) => {
+  return res.status(403).json({ 
+    error: 'File upload disabled',
+    message: 'การอัปโหลดไฟล์ถูกปิดใช้งานเพื่อประหยัด credit กรุณาใช้เฉพาะข้อความเท่านั้น'
+  });
+  
+  /* DISABLED CODE - Text only mode
   const { userId } = req.params;
   
   if (!req.file) {
@@ -1262,54 +1269,28 @@ async function handleEvent(event) {
         break;
 
       case 'image':
-        try {
-          const imageUrl = await downloadLineContent(event.message.id, 'jpg');
-          messageData.imageUrl = imageUrl;
-          messageData.text = '📷 ส่งรูปภาพ';
-          console.log(`📷 Image received from ${userProfile.displayName}, saved to ${imageUrl}`);
-        } catch (error) {
-          console.error('Error downloading image:', error);
-          messageData.text = '📷 รูปภาพ (ดาวน์โหลดไม่สำเร็จ)';
-        }
+        // Text only mode - skip downloading images to save Railway credit
+        messageData.text = '📷 ส่งรูปภาพ (โหมดข้อความเท่านั้น - ไม่สามารถดูรูปภาพได้)';
+        console.log(`📷 Image received from ${userProfile.displayName} (not downloaded - text only mode)`);
         break;
 
       case 'video':
-        try {
-          const videoUrl = await downloadLineContent(event.message.id, 'mp4');
-          messageData.videoUrl = videoUrl;
-          messageData.text = '🎥 ส่งวิดีโอ';
-          console.log(`🎥 Video received from ${userProfile.displayName}, saved to ${videoUrl}`);
-        } catch (error) {
-          console.error('Error downloading video:', error);
-          messageData.text = '🎥 วิดีโอ (ดาวน์โหลดไม่สำเร็จ)';
-        }
+        // Text only mode - skip downloading videos to save Railway credit
+        messageData.text = '🎥 ส่งวิดีโอ (โหมดข้อความเท่านั้น - ไม่สามารถดูวิดีโอได้)';
+        console.log(`🎥 Video received from ${userProfile.displayName} (not downloaded - text only mode)`);
         break;
 
       case 'audio':
-        try {
-          const audioUrl = await downloadLineContent(event.message.id, 'm4a');
-          messageData.audioUrl = audioUrl;
-          messageData.text = '🎵 ส่งเสียง';
-          console.log(`🎵 Audio received from ${userProfile.displayName}, saved to ${audioUrl}`);
-        } catch (error) {
-          console.error('Error downloading audio:', error);
-          messageData.text = '🎵 ไฟล์เสียง (ดาวน์โหลดไม่สำเร็จ)';
-        }
+        // Text only mode - skip downloading audio to save Railway credit
+        messageData.text = '🎵 ส่งเสียง (โหมดข้อความเท่านั้น - ไม่สามารถฟังเสียงได้)';
+        console.log(`🎵 Audio received from ${userProfile.displayName} (not downloaded - text only mode)`);
         break;
 
       case 'file':
-        try {
-          const fileName = event.message.fileName || 'document';
-          const fileExtension = fileName.split('.').pop() || 'bin';
-          const fileUrl = await downloadLineContent(event.message.id, fileExtension);
-          messageData.fileUrl = fileUrl;
-          messageData.fileName = fileName;
-          messageData.text = `📎 ส่งไฟล์: ${fileName}`;
-          console.log(`📎 File received from ${userProfile.displayName}: ${fileName}`);
-        } catch (error) {
-          console.error('Error downloading file:', error);
-          messageData.text = '📎 ไฟล์ (ดาวน์โหลดไม่สำเร็จ)';
-        }
+        // Text only mode - skip downloading files to save Railway credit
+        const fileName = event.message.fileName || 'document';
+        messageData.text = `📎 ส่งไฟล์: ${fileName} (โหมดข้อความเท่านั้น - ไม่สามารถดาวน์โหลดไฟล์ได้)`;
+        console.log(`📎 File received from ${userProfile.displayName}: ${fileName} (not downloaded - text only mode)`);
         break;
 
       case 'sticker':
