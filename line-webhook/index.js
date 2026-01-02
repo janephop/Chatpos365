@@ -426,6 +426,11 @@ app.get('/api/download/:filename', (req, res) => {
 // LINE Webhook middleware MUST come BEFORE express.json()
 // Because LINE middleware needs raw body (Buffer) to verify signature
 app.use('/webhook/line', (req, res, next) => {
+  // Skip signature verification for HEAD requests (used for testing)
+  if (req.method === 'HEAD') {
+    return next();
+  }
+  
   // Check if configuration is set
   if (!config.channelAccessToken || !config.channelSecret) {
     console.error('❌ LINE configuration not set!');
