@@ -38,16 +38,23 @@ const getApiUrl = () => {
   // Backend ควรอยู่ที่ yyyyy.railway.app (ต้องตั้ง VITE_API_URL)
   // หรือถ้าใช้ subdomain: api.xxxxx.railway.app
   if (hostname.includes('.railway.app') || hostname.includes('.up.railway.app')) {
-    // For Railway, prefer VITE_API_URL, otherwise try to detect
-    // If VITE_API_URL is not set, user should set it manually
-    // Default: assume backend is on different Railway service
-    // (User must set VITE_API_URL in Railway environment variables)
-    // For now, if VITE_API_URL is not set, show error message
-    if (!import.meta.env.VITE_API_URL) {
-      console.error('⚠️ VITE_API_URL is not set! Please set it in Railway Variables.');
-      console.error('Frontend URL:', window.location.origin);
-      console.error('Expected Backend URL: https://chatpos365-production.up.railway.app');
+    // For Railway, try to use VITE_API_URL from build time
+    // If not available, try to read from window.__ENV__ (runtime injection)
+    // Or use hardcoded backend URL for Railway
+    if (import.meta.env.VITE_API_URL) {
+      return import.meta.env.VITE_API_URL;
     }
+    
+    // Try runtime injection (if Railway injects env vars at runtime)
+    if (window.__ENV__ && window.__ENV__.VITE_API_URL) {
+      return window.__ENV__.VITE_API_URL;
+    }
+    
+    // Hardcoded fallback for Railway (since we know the backend URL)
+    // This is a workaround for Vite build-time env vars not being available
+    const knownBackendUrl = 'https://chatpos365-production.up.railway.app';
+    console.warn('⚠️ VITE_API_URL not found at build time, using hardcoded backend URL:', knownBackendUrl);
+    return knownBackendUrl;
   }
   
   // If external domain (ngrok, cloud, etc.), try to detect backend URL
