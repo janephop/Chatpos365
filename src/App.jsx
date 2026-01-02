@@ -110,14 +110,14 @@ const AppleCard = ({ children, className = "" }) => (
   </div>
 );
 
-// Helper function to get logo URL
+// Helper function to get logo URL or SVG
 const getLogoUrl = (platform) => {
   switch (platform) {
     case 'shopee': return 'https://logo.clearbit.com/shopee.co.th';
     case 'lazada': return 'https://logo.clearbit.com/lazada.co.th';
     case 'tiktok': return 'https://logo.clearbit.com/tiktok.com';
     case 'facebook': return 'https://logo.clearbit.com/facebook.com';
-    case 'line': return 'https://at.line.me/img/line_at_logo.png'; // LINE@ logo
+    case 'line': return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjMDZDNzU1Ii8+CjxwYXRoIGQ9Ik0xMiA2TDEyLjU0IDkuNzNMMTYgMTBMMTIuNTQgMTAuMjdMMTIgMTRMMTEuNDYgMTAuMjdMOCAxMEwxMS40NiA5LjczTDEyIDZaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K'; // LINE@ logo (green with @ symbol)
     case 'instagram': return 'https://logo.clearbit.com/instagram.com';
     default: return null;
   }

@@ -1582,6 +1582,45 @@ app.delete('/api/shipping-companies/:id', (req, res) => {
 // Chat History & Sync APIs (สำหรับเครื่องอื่น)
 // ============================================
 
+// Auto-backup to GitHub (via webhook or manual trigger)
+// This endpoint can be called periodically to backup data
+app.post('/api/backup/github', async (req, res) => {
+  try {
+    // Get all data
+    const chatsData = {};
+    chats.forEach((chat, userId) => {
+      chatsData[userId] = chat;
+    });
+    
+    const messagesData = {};
+    messages.forEach((msgs, userId) => {
+      messagesData[userId] = msgs;
+    });
+    
+    // Save to JSON files first
+    saveData();
+    
+    // Return data for manual GitHub commit
+    res.json({
+      success: true,
+      message: 'Data ready for GitHub backup',
+      data: {
+        chats: chatsData,
+        messages: messagesData,
+        timestamp: Date.now()
+      },
+      instructions: [
+        '1. Download this JSON response',
+        '2. Commit to GitHub repository',
+        '3. After deploy, use /api/chats/sync/import to restore'
+      ]
+    });
+  } catch (error) {
+    console.error('Backup error:', error);
+    res.status(500).json({ error: 'Failed to create backup' });
+  }
+});
+
 // Get all chat history (for cross-device access)
 app.get('/api/chats/history/all', (req, res) => {
   try {
