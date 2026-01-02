@@ -415,6 +415,26 @@ app.use('/webhook/line', (req, res, next) => {
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Root route - Health check
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'LINE Webhook Server is running',
+    version: '1.0.0',
+    endpoints: {
+      webhook: '/webhook/line',
+      config: '/config',
+      api: {
+        chats: '/api/chats',
+        messages: '/api/chats/:userId/messages',
+        bills: '/api/bills',
+        products: '/api/products',
+        settings: '/api/settings'
+      }
+    }
+  });
+});
+
 // API endpoint to get settings
 app.get('/api/settings', (req, res) => {
   res.json(settings);
