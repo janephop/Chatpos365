@@ -1087,6 +1087,12 @@ app.post('/api/config/update', (req, res) => {
   }
 });
 
+// Webhook endpoint - Support HEAD for testing
+app.head('/webhook/line', (req, res) => {
+  // HEAD request for testing connection (no body needed)
+  res.status(200).end();
+});
+
 // Webhook endpoint
 app.post('/webhook/line', async (req, res) => {
   console.log('Received webhook event:');
