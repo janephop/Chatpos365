@@ -1044,7 +1044,47 @@ app.post('/api/chats/:userId/upload', upload.single('file'), async (req, res) =>
     if (!messages.has(userId)) {
       messages.set(userId, []);
     }
+    
+    // Ensure message has a unique ID
+    if (!messageData.id) {
+      messageData.id = `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+    
     messages.get(userId).push(messageData);
+
+    // Save to database immediately
+    if (db) {
+      try {
+        const stmt = db.prepare(`
+          INSERT OR REPLACE INTO messages 
+          (id, user_id, text, sender, type, time, timestamp, image_url, video_url, 
+           audio_url, file_url, file_name, sticker_id, package_id, latitude, longitude)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        
+        stmt.run(
+          messageData.id,
+          userId,
+          messageData.text || '',
+          messageData.sender || 'admin',
+          messageData.type || 'text',
+          messageData.time || '',
+          messageData.timestamp || Date.now(),
+          messageData.imageUrl || null,
+          messageData.videoUrl || null,
+          messageData.audioUrl || null,
+          messageData.fileUrl || null,
+          messageData.fileName || null,
+          messageData.stickerId || null,
+          messageData.packageId || null,
+          messageData.latitude || null,
+          messageData.longitude || null
+        );
+        console.log(`💾 Message saved to database: ${messageData.id}`);
+      } catch (dbError) {
+        console.error('⚠️  Database save error:', dbError.message);
+      }
+    }
 
     // Save to file
     saveData();

@@ -2776,6 +2776,8 @@ export default function OmniChatApp() {
 
   // Video refs to prevent reload on polling
   const videoRefs = useRef(new Map());
+  // Cache for video elements to prevent re-render
+  const videoElementCache = useRef(new Map());
 
   const renderMessageBubble = (msg) => {
     const isAdmin = msg.sender === 'admin';
@@ -2812,7 +2814,55 @@ export default function OmniChatApp() {
         : `${API_URL}${msg.videoUrl}`;
       
       const videoKey = `video-${msg.id || videoUrl}`;
-      const videoRef = videoRefs.current.get(videoKey);
+      
+      // Use cached video element if available to prevent re-render
+      let videoElement = videoElementCache.current.get(videoKey);
+      
+      if (!videoElement) {
+        videoElement = (
+          <video
+            ref={(el) => {
+              if (el) {
+                const existingRef = videoRefs.current.get(videoKey);
+                if (!existingRef || existingRef !== el) {
+                  videoRefs.current.set(videoKey, el);
+                  // Only set src if not already set to prevent reload
+                  if (!el.src || el.src === '') {
+                    el.src = videoUrl;
+                  }
+                  el.pause();
+                  el.currentTime = 0;
+                }
+              }
+            }}
+            key={videoKey} // Use stable key to prevent reload
+            preload="none" // Don't preload to prevent reload
+            className="rounded-xl max-w-full h-auto"
+            style={{ maxHeight: '300px' }}
+            controls={false}
+            playsInline
+            muted
+            onError={(e) => {
+              console.error('Video load error:', videoUrl);
+              // Show placeholder if video fails to load
+              e.target.style.display = 'none';
+              const parent = e.target.parentElement;
+              if (parent && !parent.querySelector('.video-error')) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'video-error bg-gray-100 rounded-xl p-4 text-center';
+                errorDiv.innerHTML = '<p class="text-sm text-gray-500">🎥 วิดีโอไม่สามารถโหลดได้</p><p class="text-xs text-gray-400 mt-1">ไฟล์อาจถูกลบหรือไม่สามารถเข้าถึงได้</p>';
+                parent.appendChild(errorDiv);
+              }
+            }}
+            onLoadedMetadata={(e) => {
+              // Prevent auto-play and ensure video doesn't reload
+              e.target.pause();
+              e.target.currentTime = 0;
+            }}
+          />
+        );
+        videoElementCache.current.set(videoKey, videoElement);
+      }
 
       content = (
         <div className="max-w-sm">
@@ -2820,46 +2870,7 @@ export default function OmniChatApp() {
             className="relative rounded-xl overflow-hidden cursor-pointer group"
             onClick={() => setPreviewMedia({ type: 'video', url: videoUrl })}
           >
-            <video
-              ref={(el) => {
-                if (el) {
-                  const existingRef = videoRefs.current.get(videoKey);
-                  if (!existingRef || existingRef !== el) {
-                    videoRefs.current.set(videoKey, el);
-                    // Prevent auto-reload on polling - only set src if not already set
-                    if (el.src !== videoUrl && el.src !== `${videoUrl}#t=0`) {
-                      el.pause();
-                      el.currentTime = 0;
-                    }
-                  }
-                }
-              }}
-              key={videoKey} // Use stable key to prevent reload
-              src={videoUrl}
-              preload="none" // Don't preload to prevent reload
-              className="rounded-xl max-w-full h-auto"
-              style={{ maxHeight: '300px' }}
-              controls={false}
-              playsInline
-              muted
-              onError={(e) => {
-                console.error('Video load error:', videoUrl);
-                // Show placeholder if video fails to load
-                e.target.style.display = 'none';
-                const parent = e.target.parentElement;
-                if (parent && !parent.querySelector('.video-error')) {
-                  const errorDiv = document.createElement('div');
-                  errorDiv.className = 'video-error bg-gray-100 rounded-xl p-4 text-center';
-                  errorDiv.innerHTML = '<p class="text-sm text-gray-500">🎥 วิดีโอไม่สามารถโหลดได้</p><p class="text-xs text-gray-400 mt-1">ไฟล์อาจถูกลบหรือไม่สามารถเข้าถึงได้</p>';
-                  parent.appendChild(errorDiv);
-                }
-              }}
-              onLoadedMetadata={(e) => {
-                // Prevent auto-play and ensure video doesn't reload
-                e.target.pause();
-                e.target.currentTime = 0;
-              }}
-            />
+            {videoElement}
             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition flex items-center justify-center pointer-events-none">
               <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
                 <Play size={32} className="text-[#1D1D1F] ml-1" fill="currentColor" />
