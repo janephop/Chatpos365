@@ -2244,6 +2244,120 @@ app.get('/api/database/info', (req, res) => {
   }
 });
 
+// Auto-restore from backup (if backup file exists)
+app.post('/api/restore/auto', async (req, res) => {
+  try {
+    // Check if backup file exists in data directory
+    const backupFile = path.join(DATA_DIR, 'backup_data.json');
+    
+    if (!fs.existsSync(backupFile)) {
+      return res.json({
+        success: false,
+        message: 'No backup file found. Please backup first.',
+        backupFile: backupFile
+      });
+    }
+    
+    // Load backup data
+    const backupData = JSON.parse(fs.readFileSync(backupFile, 'utf8'));
+    
+    // Import chats
+    if (backupData.chats && Array.isArray(backupData.chats)) {
+      if (db) {
+        const stmt = db.prepare(`
+          INSERT OR REPLACE INTO chats 
+          (user_id, name, avatar, platform, online, time, unread, is_pinned, tags, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%s', 'now'))
+        `);
+        
+        const insertMany = db.transaction((chats) => {
+          chats.forEach(chat => {
+            stmt.run(
+              chat.userId || chat.id,
+              chat.name || '',
+              chat.avatar || '',
+              chat.platform || 'line',
+              chat.online ? 1 : 0,
+              chat.time || '',
+              chat.unread || 0,
+              chat.isPinned ? 1 : 0,
+              JSON.stringify(chat.tags || [])
+            );
+          });
+        });
+        
+        insertMany(backupData.chats);
+      }
+      
+      // Update memory
+      backupData.chats.forEach(chat => {
+        const userId = chat.userId || chat.id;
+        chats.set(userId, chat);
+      });
+    }
+    
+    // Import messages
+    if (backupData.messages && typeof backupData.messages === 'object') {
+      if (db) {
+        const stmt = db.prepare(`
+          INSERT OR REPLACE INTO messages 
+          (id, user_id, text, sender, type, time, timestamp, image_url, video_url, 
+           audio_url, file_url, file_name, sticker_id, package_id, latitude, longitude)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        
+        const insertMany = db.transaction((messagesObj) => {
+          for (const [userId, msgs] of Object.entries(messagesObj)) {
+            msgs.forEach((msg, index) => {
+              const msgId = msg.id || `${userId}_${index}_${msg.timestamp || Date.now()}`;
+              stmt.run(
+                msgId,
+                userId,
+                msg.text || '',
+                msg.sender || 'user',
+                msg.type || 'text',
+                msg.time || '',
+                msg.timestamp || Date.now(),
+                msg.imageUrl || null,
+                msg.videoUrl || null,
+                msg.audioUrl || null,
+                msg.fileUrl || null,
+                msg.fileName || null,
+                msg.stickerId || null,
+                msg.packageId || null,
+                msg.latitude || null,
+                msg.longitude || null
+              );
+            });
+          }
+        });
+        
+        insertMany(backupData.messages);
+      }
+      
+      // Update memory
+      Object.entries(backupData.messages).forEach(([userId, msgs]) => {
+        messages.set(userId, msgs);
+      });
+    }
+    
+    // Save to JSON files
+    saveData();
+    
+    res.json({
+      success: true,
+      message: 'Data restored successfully',
+      restored: {
+        chats: backupData.chats?.length || 0,
+        messages: Object.keys(backupData.messages || {}).length
+      }
+    });
+  } catch (error) {
+    console.error('Restore error:', error);
+    res.status(500).json({ error: 'Failed to restore data', message: error.message });
+  }
+});
+
 // Sync JSON to Database
 app.post('/api/database/sync', (req, res) => {
   try {

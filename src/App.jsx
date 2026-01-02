@@ -126,6 +126,18 @@ const getLogoUrl = (platform) => {
 const PlatformIcon = ({ platform }) => {
   const logoUrl = getLogoUrl(platform);
 
+  // Special handling for LINE@ logo
+  if (platform === 'line') {
+    return (
+      <div className="w-4 h-4 rounded-full bg-[#06C755] flex items-center justify-center border border-white shadow-sm">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 1L6.545 4.365L9 5L6.545 5.635L6 9L5.455 5.635L3 5L5.455 4.365L6 1Z" fill="white"/>
+          <circle cx="6" cy="5" r="2" fill="none" stroke="white" strokeWidth="0.5"/>
+        </svg>
+      </div>
+    );
+  }
+
   if (logoUrl) {
     return (
       <img
@@ -154,6 +166,18 @@ const PlatformIcon = ({ platform }) => {
 
 const ShopIcon = ({ type }) => {
   if (type === 'all') return <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center"><Flame size={16} fill="currentColor" /></div>;
+
+  // Special handling for LINE@ logo
+  if (type === 'line') {
+    return (
+      <div className="w-8 h-8 rounded-full bg-[#06C755] flex items-center justify-center border border-gray-100 shadow-sm">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 2L10.908 7.275L16 8L10.908 8.725L10 14L9.092 8.725L4 8L9.092 7.275L10 2Z" fill="white"/>
+          <circle cx="10" cy="8" r="3" fill="none" stroke="white" strokeWidth="0.8"/>
+        </svg>
+      </div>
+    );
+  }
 
   const logoUrl = getLogoUrl(type);
   if (logoUrl) {
