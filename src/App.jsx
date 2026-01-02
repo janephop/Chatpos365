@@ -2350,38 +2350,10 @@ export default function OmniChatApp() {
     }
   };
 
+  // File upload disabled - text only mode to save Railway credit
   const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file || !activeChatId) return;
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      console.log(`📤 Uploading ${file.name}...`);
-
-      const response = await fetch(`${API_URL}/api/chats/${activeChatId}/upload`, {
-        method: 'POST',
-        body: formData
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        console.log('✅ File uploaded and sent:', data);
-        // Message will appear via polling
-      } else {
-        console.error('Failed to upload file:', data);
-        const errorMsg = data.error || 'Unknown error';
-        const hintMsg = data.hint ? `\n\n${data.hint}` : '';
-        alert(`❌ ไม่สามารถส่งไฟล์ได้\n\n${errorMsg}${hintMsg}`);
-      }
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      alert('❌ เกิดข้อผิดพลาดในการส่งไฟล์\n\nกรุณาตรวจสอบ:\n1. Backend กำลังทำงาน\n2. ngrok กำลังทำงาน\n3. ngrok URL ถูกตั้งค่าใน Settings');
-    }
-
-    // Clear file input
+    e.preventDefault();
+    alert('การอัปโหลดไฟล์ถูกปิดใช้งานเพื่อประหยัด credit\nกรุณาใช้เฉพาะข้อความเท่านั้น');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -3459,7 +3431,8 @@ export default function OmniChatApp() {
               {/* Input Area */}
               <div className="p-4 bg-white border-t border-gray-100">
                 <div className="flex items-center gap-3">
-                  <button
+                  {/* File upload disabled - text only mode to save Railway credit */}
+                  {/* <button
                     onClick={() => fileInputRef.current.click()}
                     className="text-gray-400 hover:text-[#007AFF] transition"
                     title="แนบไฟล์, รูปภาพ, วิดีโอ"
@@ -3472,7 +3445,7 @@ export default function OmniChatApp() {
                     className="hidden"
                     onChange={handleFileUpload}
                     accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar"
-                  />
+                  /> */}
 
                   <button onClick={() => setShowBillModal(true)} className="text-gray-400 hover:text-[#007AFF] transition" title="สร้างบิลใหม่">
                     <Receipt size={22} strokeWidth={2} />
