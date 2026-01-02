@@ -78,3 +78,20 @@ console.log('🌐 Frontend URL:', window.location.origin);
 console.log('🔍 VITE_API_URL from env:', import.meta.env.VITE_API_URL);
 console.log('🔍 All env vars:', import.meta.env);
 
+// Test backend connection on startup
+if (typeof window !== 'undefined') {
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(data => {
+      console.log('✅ Backend is reachable:', data);
+    })
+    .catch(error => {
+      console.error('❌ Backend is NOT reachable:', error);
+      console.error('💡 Please check:');
+      console.error('   1. Backend service is running on Railway');
+      console.error('   2. VITE_API_URL is set correctly in Railway Variables');
+      console.error('   3. Backend URL:', API_URL);
+      console.error('   4. Check Railway Dashboard → Backend Service → Logs');
+    });
+}
+

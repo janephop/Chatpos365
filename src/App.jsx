@@ -2117,6 +2117,13 @@ export default function OmniChatApp() {
           console.log('✅ LINE config loaded from localStorage and sent to backend');
         } catch (error) {
           console.error('Failed to load LINE config:', error);
+          if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+            console.error(`❌ Cannot connect to backend at ${API_URL}`);
+            console.error('💡 Please check:');
+            console.error('   1. Backend service is running on Railway');
+            console.error('   2. VITE_API_URL is set correctly in Railway Variables');
+            console.error('   3. Backend URL is accessible:', API_URL);
+          }
         }
       }
     };
@@ -2140,6 +2147,14 @@ export default function OmniChatApp() {
         }
       } catch (error) {
         console.error('Error fetching chats:', error);
+        // Check if backend is reachable
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          console.error(`❌ Cannot connect to backend at ${API_URL}`);
+          console.error('💡 Please check:');
+          console.error('   1. Backend service is running on Railway');
+          console.error('   2. VITE_API_URL is set correctly in Railway Variables');
+          console.error('   3. Backend URL is accessible:', API_URL);
+        }
       }
     };
 
