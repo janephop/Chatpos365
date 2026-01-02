@@ -65,9 +65,9 @@ const getApiUrl = () => {
 
 export const API_URL = getApiUrl();
 
-// Log API URL for debugging (only in development)
-if (import.meta.env.DEV) {
-  console.log('🔗 API URL:', API_URL);
-  console.log('🌐 Frontend URL:', window.location.origin);
-}
+// Log API URL for debugging (always log in production to help debug)
+console.log('🔗 API URL:', API_URL);
+console.log('🌐 Frontend URL:', window.location.origin);
+console.log('🔍 VITE_API_URL from env:', import.meta.env.VITE_API_URL);
+console.log('🔍 All env vars:', import.meta.env);
 
