@@ -517,6 +517,7 @@ app.get('/api/chats', (req, res) => {
           name: chat.name,
           avatar: chat.avatar,
           platform: chat.platform,
+          shopId: chat.platform === 'line' ? 'shop_line_1' : undefined, // Map platform to shopId for filtering
           online: chat.online === 1,
           time: lastMessage?.time || chat.time,
           unread: chat.unread,
@@ -535,6 +536,7 @@ app.get('/api/chats', (req, res) => {
     // Fallback to memory (in-memory Map)
     chatList = Array.from(chats.values()).map(chat => ({
       ...chat,
+      shopId: chat.platform === 'line' ? 'shop_line_1' : undefined, // Map platform to shopId for filtering
       messageCount: messages.get(chat.userId)?.length || 0,
       lastMessage: messages.get(chat.userId)?.[messages.get(chat.userId).length - 1]?.text || '',
       time: messages.get(chat.userId)?.[messages.get(chat.userId).length - 1]?.time || chat.time
