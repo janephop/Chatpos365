@@ -2794,10 +2794,14 @@ export default function OmniChatApp() {
             onClick={() => setPreviewMedia({ type: 'video', url: videoUrl })}
           >
             <video
+              key={msg.id || videoUrl} // Use message ID as key to prevent reload
               src={videoUrl}
               preload="metadata"
               className="rounded-xl max-w-full h-auto"
               style={{ maxHeight: '300px' }}
+              controls={false}
+              playsInline
+              muted
             />
             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition flex items-center justify-center pointer-events-none">
               <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
