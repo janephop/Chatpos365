@@ -1174,6 +1174,7 @@ app.post('/api/chats/:userId/upload', upload.single('file'), async (req, res) =>
       details: error.response?.data || 'Unknown error'
     });
   }
+  */
 });
 
 // API endpoint to update LINE configuration
