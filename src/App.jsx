@@ -2159,8 +2159,8 @@ export default function OmniChatApp() {
     };
 
     fetchChats();
-    // Poll for new chats every 3 seconds
-    const interval = setInterval(fetchChats, 3000);
+    // Poll for new chats every 10 seconds (reduced to save Railway credit)
+    const interval = setInterval(fetchChats, 10000);
     return () => clearInterval(interval);
   }, [activeTab, activeChatId]);
 
@@ -2220,14 +2220,14 @@ export default function OmniChatApp() {
     };
 
     fetchMessages();
-    // Poll for new messages every 2 seconds
+    // Poll for new messages every 5 seconds (reduced to save Railway credit)
     const interval = setInterval(() => {
       try {
         fetchMessages();
       } catch (error) {
         console.debug('Error in message polling:', error);
       }
-    }, 2000);
+    }, 5000);
     return () => {
       if (interval) {
         clearInterval(interval);
