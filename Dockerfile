@@ -13,6 +13,9 @@ RUN npm install
 COPY . .
 
 # Build application
+# Pass VITE_API_URL as build argument so Vite can read it at build time
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # Expose port
