@@ -332,7 +332,15 @@ app.get('/uploads/:filename', (req, res) => {
   
   // Check if file exists
   if (!fs.existsSync(filePath)) {
-    return res.status(404).send('File not found');
+    console.error(`❌ File not found: ${filePath}`);
+    console.error(`   Uploads directory: ${UPLOADS_DIR}`);
+    console.error(`   Available files:`, fs.existsSync(UPLOADS_DIR) ? fs.readdirSync(UPLOADS_DIR).slice(0, 10) : 'Directory does not exist');
+    return res.status(404).json({ 
+      error: 'File not found',
+      filename: filename,
+      path: filePath,
+      message: 'ไฟล์ถูกลบหรือไม่สามารถเข้าถึงได้ (Railway ephemeral storage)'
+    });
   }
 
   const stat = fs.statSync(filePath);

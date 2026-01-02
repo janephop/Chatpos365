@@ -2180,15 +2180,21 @@ export default function OmniChatApp() {
         
         // Only update if messages actually changed (prevent unnecessary re-renders)
         setMessages(prevMessages => {
-          // Compare by message IDs to avoid re-rendering if nothing changed
-          const prevIds = new Set(prevMessages.map(m => m.id));
-          const newIds = new Set(mappedMessages.map(m => m.id));
-          
-          // If same messages, return previous to prevent re-render
-          if (prevIds.size === newIds.size && 
-              Array.from(prevIds).every(id => newIds.has(id)) &&
-              prevMessages.length === mappedMessages.length) {
-            return prevMessages;
+          // Compare by message IDs and content to avoid re-rendering if nothing changed
+          if (prevMessages.length === mappedMessages.length) {
+            const hasChanged = prevMessages.some((prevMsg, idx) => {
+              const newMsg = mappedMessages[idx];
+              return !newMsg || 
+                     prevMsg.id !== newMsg.id || 
+                     prevMsg.text !== newMsg.text ||
+                     prevMsg.videoUrl !== newMsg.videoUrl ||
+                     prevMsg.imageUrl !== newMsg.imageUrl;
+            });
+            
+            // If nothing changed, return previous to prevent re-render (especially for videos)
+            if (!hasChanged) {
+              return prevMessages;
+            }
           }
           
           return mappedMessages;
@@ -2805,7 +2811,7 @@ export default function OmniChatApp() {
         ? msg.videoUrl
         : `${API_URL}${msg.videoUrl}`;
       
-      const videoKey = msg.id || videoUrl;
+      const videoKey = `video-${msg.id || videoUrl}`;
       const videoRef = videoRefs.current.get(videoKey);
 
       content = (
@@ -2816,23 +2822,42 @@ export default function OmniChatApp() {
           >
             <video
               ref={(el) => {
-                if (el && !videoRef) {
-                  videoRefs.current.set(videoKey, el);
-                  // Prevent auto-reload on polling
-                  el.pause();
+                if (el) {
+                  const existingRef = videoRefs.current.get(videoKey);
+                  if (!existingRef || existingRef !== el) {
+                    videoRefs.current.set(videoKey, el);
+                    // Prevent auto-reload on polling - only set src if not already set
+                    if (el.src !== videoUrl && el.src !== `${videoUrl}#t=0`) {
+                      el.pause();
+                      el.currentTime = 0;
+                    }
+                  }
                 }
               }}
-              key={videoKey} // Use message ID as key to prevent reload
+              key={videoKey} // Use stable key to prevent reload
               src={videoUrl}
-              preload="metadata"
+              preload="none" // Don't preload to prevent reload
               className="rounded-xl max-w-full h-auto"
               style={{ maxHeight: '300px' }}
               controls={false}
               playsInline
               muted
+              onError={(e) => {
+                console.error('Video load error:', videoUrl);
+                // Show placeholder if video fails to load
+                e.target.style.display = 'none';
+                const parent = e.target.parentElement;
+                if (parent && !parent.querySelector('.video-error')) {
+                  const errorDiv = document.createElement('div');
+                  errorDiv.className = 'video-error bg-gray-100 rounded-xl p-4 text-center';
+                  errorDiv.innerHTML = '<p class="text-sm text-gray-500">🎥 วิดีโอไม่สามารถโหลดได้</p><p class="text-xs text-gray-400 mt-1">ไฟล์อาจถูกลบหรือไม่สามารถเข้าถึงได้</p>';
+                  parent.appendChild(errorDiv);
+                }
+              }}
               onLoadedMetadata={(e) => {
-                // Prevent auto-play
+                // Prevent auto-play and ensure video doesn't reload
                 e.target.pause();
+                e.target.currentTime = 0;
               }}
             />
             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition flex items-center justify-center pointer-events-none">
@@ -3415,7 +3440,7 @@ export default function OmniChatApp() {
                     <p>No messages yet</p>
                   </div>
                 ) : messages.map(msg => (
-                  <div key={msg.id}>{renderMessageBubble(msg)}</div>
+                  <div key={`msg-${msg.id}-${msg.timestamp || Date.now()}`}>{renderMessageBubble(msg)}</div>
                 ))}
                 <div ref={messagesEndRef} />
               </div>
