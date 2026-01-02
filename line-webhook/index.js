@@ -694,17 +694,36 @@ let productsCache = {
 };
 
 // Function to load products from SQL file
-function loadProductsFromSQL() {
+function loadProductsFromSQL(productsSqlPath) {
   try {
-    const posDbPath = path.join(__dirname, '..', '..', 'postest');
-    const productsSqlPath = path.join(posDbPath, 'public', 'sql', 'products.sql');
+    // Use provided path or try default paths
+    let filePath = productsSqlPath;
+    
+    if (!filePath) {
+      // Try multiple default paths
+      const defaultPaths = [
+        path.join(__dirname, '..', '..', 'postest', 'public', 'sql', 'products.sql'),
+        path.join(__dirname, 'data', 'products.sql'),
+        process.env.POS_DB_PATH
+      ].filter(Boolean);
+      
+      for (const p of defaultPaths) {
+        if (p && fs.existsSync(p)) {
+          filePath = p;
+          break;
+        }
+      }
+    }
     
     // Check if file exists
-    if (!fs.existsSync(productsSqlPath)) {
-      console.warn(`⚠️ Products SQL file not found at: ${productsSqlPath}`);
-      console.warn('   Please check if the path is correct relative to line-webhook folder.');
+    if (!filePath || !fs.existsSync(filePath)) {
+      console.warn(`⚠️ Products SQL file not found`);
+      if (filePath) console.warn(`   Searched: ${filePath}`);
+      console.warn('   Please set POS_DB_PATH environment variable or place products.sql in data/ folder.');
       return { products: [], lastModified: null };
     }
+    
+    const productsSqlPath = filePath;
     
     // Get file modification time
     const stats = fs.statSync(productsSqlPath);
