@@ -273,6 +273,15 @@ app.use(cors({
   credentials: true
 }));
 
+// Add CORS headers for video streaming
+app.use('/uploads/:filename', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Range');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  next();
+});
+
 // Handle OPTIONS for CORS preflight
 app.options('/uploads/:filename', (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');

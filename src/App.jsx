@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
@@ -2177,7 +2177,22 @@ export default function OmniChatApp() {
           longitude: msg.longitude
         }));
         console.log('🗺️ Mapped messages:', mappedMessages); // Debug log
-        setMessages(mappedMessages);
+        
+        // Only update if messages actually changed (prevent unnecessary re-renders)
+        setMessages(prevMessages => {
+          // Compare by message IDs to avoid re-rendering if nothing changed
+          const prevIds = new Set(prevMessages.map(m => m.id));
+          const newIds = new Set(mappedMessages.map(m => m.id));
+          
+          // If same messages, return previous to prevent re-render
+          if (prevIds.size === newIds.size && 
+              Array.from(prevIds).every(id => newIds.has(id)) &&
+              prevMessages.length === mappedMessages.length) {
+            return prevMessages;
+          }
+          
+          return mappedMessages;
+        });
       } catch (error) {
         console.error('Error fetching messages:', error);
       }
@@ -2753,6 +2768,9 @@ export default function OmniChatApp() {
 
   // --- Renderers ---
 
+  // Video refs to prevent reload on polling
+  const videoRefs = useRef(new Map());
+
   const renderMessageBubble = (msg) => {
     const isAdmin = msg.sender === 'admin';
     let content;
@@ -2786,6 +2804,9 @@ export default function OmniChatApp() {
       const videoUrl = msg.videoUrl.startsWith('http')
         ? msg.videoUrl
         : `${API_URL}${msg.videoUrl}`;
+      
+      const videoKey = msg.id || videoUrl;
+      const videoRef = videoRefs.current.get(videoKey);
 
       content = (
         <div className="max-w-sm">
@@ -2794,7 +2815,14 @@ export default function OmniChatApp() {
             onClick={() => setPreviewMedia({ type: 'video', url: videoUrl })}
           >
             <video
-              key={msg.id || videoUrl} // Use message ID as key to prevent reload
+              ref={(el) => {
+                if (el && !videoRef) {
+                  videoRefs.current.set(videoKey, el);
+                  // Prevent auto-reload on polling
+                  el.pause();
+                }
+              }}
+              key={videoKey} // Use message ID as key to prevent reload
               src={videoUrl}
               preload="metadata"
               className="rounded-xl max-w-full h-auto"
@@ -2802,6 +2830,10 @@ export default function OmniChatApp() {
               controls={false}
               playsInline
               muted
+              onLoadedMetadata={(e) => {
+                // Prevent auto-play
+                e.target.pause();
+              }}
             />
             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition flex items-center justify-center pointer-events-none">
               <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
