@@ -117,7 +117,7 @@ const getLogoUrl = (platform) => {
     case 'lazada': return 'https://logo.clearbit.com/lazada.co.th';
     case 'tiktok': return 'https://logo.clearbit.com/tiktok.com';
     case 'facebook': return 'https://logo.clearbit.com/facebook.com';
-    case 'line': return 'https://logo.clearbit.com/line.me';
+    case 'line': return 'https://at.line.me/img/line_at_logo.png'; // LINE@ logo
     case 'instagram': return 'https://logo.clearbit.com/instagram.com';
     default: return null;
   }
