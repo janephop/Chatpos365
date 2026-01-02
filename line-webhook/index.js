@@ -922,12 +922,27 @@ app.post('/api/chats/:userId/upload', upload.single('file'), async (req, res) =>
   }
 
   try {
-    // Check if ngrok URL is configured
-    if (!config.ngrokUrl || config.ngrokUrl === '' || config.ngrokUrl === 'http://localhost:3000') {
-      console.error('❌ ngrok URL not configured:', config.ngrokUrl);
+    // Determine base URL: use Railway URL if available, otherwise use ngrok URL
+    // Railway sets RAILWAY_PUBLIC_DOMAIN or we can use request hostname
+    let baseUrl = config.ngrokUrl;
+    
+    // Check if running on Railway (production)
+    if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+      baseUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+      console.log('✅ Using Railway URL:', baseUrl);
+    } else if (process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
+      // Try to get from request or use known Railway URL
+      const railwayUrl = process.env.RAILWAY_URL || 'https://chatpos365-production.up.railway.app';
+      baseUrl = railwayUrl;
+      console.log('✅ Using Railway URL (from env):', baseUrl);
+    }
+    
+    // Fallback check: if ngrok URL is not set and we're not on Railway
+    if (!baseUrl || baseUrl === '' || baseUrl === 'http://localhost:3000') {
+      console.error('❌ Base URL not configured:', baseUrl);
       return res.status(400).json({ 
-        error: 'กรุณาตั้งค่า ngrok URL ในหน้า Settings → LINE Official Account ก่อนส่งไฟล์',
-        hint: 'ต้องการ ngrok URL เพื่อให้ LINE เข้าถึงไฟล์ได้'
+        error: 'กรุณาตั้งค่า ngrok URL หรือ Railway URL ในหน้า Settings → LINE Official Account ก่อนส่งไฟล์',
+        hint: 'ต้องการ URL เพื่อให้ LINE เข้าถึงไฟล์ได้'
       });
     }
 
@@ -937,12 +952,12 @@ app.post('/api/chats/:userId/upload', upload.single('file'), async (req, res) =>
     const mimeType = req.file.mimetype;
     const fileExtension = path.extname(originalName).toLowerCase();
     const fileUrl = `/uploads/${filename}`;
-    const fullUrl = `${config.ngrokUrl}${fileUrl}`;
+    const fullUrl = `${baseUrl}${fileUrl}`;
     
     console.log(`📤 Preparing to send ${mimeType} file to LINE`);
     console.log(`   - File: ${originalName}`);
     console.log(`   - Full URL: ${fullUrl}`);
-    console.log(`   - Config ngrok: ${config.ngrokUrl}`);
+    console.log(`   - Base URL: ${baseUrl}`);
 
     let lineMessage;
     let messageData = {
