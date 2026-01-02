@@ -3130,10 +3130,12 @@ export default function OmniChatApp() {
             />
           ) : previewMedia.type === 'video' ? (
             <video
+              key={previewMedia.url} // Use URL as key to prevent reload
               src={previewMedia.url}
               controls
               autoPlay
               preload="metadata"
+              playsInline
               controlsList="nodownload"
               className="max-w-full max-h-[90vh] rounded-lg shadow-2xl"
             />
