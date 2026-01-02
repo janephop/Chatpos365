@@ -965,16 +965,17 @@ app.post('/api/chats/:userId/upload', upload.single('file'), async (req, res) =>
       messageData.text = '📷 ส่งรูปภาพ';
     } 
     else if (mimeType.startsWith('video/')) {
-      // Send video as a clickable link (workaround for ngrok streaming issues)
-      // This ensures customers can always view the full video in their browser
+      // Send as video message (LINE will display it as a video player)
+      // LINE requires HTTPS URL and the video must be accessible
       lineMessage = {
-        type: 'text',
-        text: `🎥 วิดีโอ: ${originalName}\n\n📹 คลิกเพื่อดูวิดีโอ:\n${fullUrl}\n\n(เปิดในเบราว์เซอร์เพื่อรับชมเต็มรูปแบบ)`
+        type: 'video',
+        originalContentUrl: fullUrl,
+        previewImageUrl: fullUrl // Use video URL as preview (LINE will extract frame)
       };
       messageData.type = 'video';
       messageData.videoUrl = fileUrl;
       messageData.text = '🎥 ส่งวิดีโอ';
-      console.log(`   - Video URL sent as link: ${fullUrl}`);
+      console.log(`   - Video sent as video message: ${fullUrl}`);
     }
     else if (mimeType.startsWith('audio/')) {
       // Send as audio message
