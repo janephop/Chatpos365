@@ -224,6 +224,45 @@ try {
 // Load data on startup
 loadData();
 
+// Auto-restore from backup if exists (after deploy)
+const backupFile = path.join(DATA_DIR, 'backup_data.json');
+if (fs.existsSync(backupFile)) {
+  try {
+    console.log('📦 Found backup file, attempting auto-restore...');
+    const backupData = JSON.parse(fs.readFileSync(backupFile, 'utf8'));
+    
+    // Restore chats
+    if (backupData.chats && Array.isArray(backupData.chats)) {
+      backupData.chats.forEach(chat => {
+        const userId = chat.userId || chat.id;
+        chats.set(userId, chat);
+      });
+      console.log(`✅ Restored ${backupData.chats.length} chats from backup`);
+    }
+    
+    // Restore messages
+    if (backupData.messages && typeof backupData.messages === 'object') {
+      Object.entries(backupData.messages).forEach(([userId, msgs]) => {
+        messages.set(userId, msgs);
+      });
+      console.log(`✅ Restored messages from ${Object.keys(backupData.messages).length} users`);
+    }
+    
+    // Save to database and files
+    if (db) {
+      // Sync to database
+      saveData();
+    } else {
+      saveData();
+    }
+    
+    console.log('✅ Auto-restore completed successfully');
+  } catch (error) {
+    console.error('❌ Auto-restore failed:', error.message);
+    console.log('⚠️  Continuing without restore');
+  }
+}
+
 // Setup Express server
 const app = express();
 const PORT = process.env.PORT || 3000;
