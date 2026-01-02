@@ -832,13 +832,35 @@ function loadProductsFromSQL() {
 // API endpoint to get products from POS database
 app.get('/api/products', (req, res) => {
   try {
-    const posDbPath = path.join(__dirname, '..', '..', 'postest');
-    const productsSqlPath = path.join(posDbPath, 'public', 'sql', 'products.sql');
+    // Try multiple paths for POS database
+    const possiblePaths = [
+      // Railway/Production path
+      process.env.POS_DB_PATH || path.join(__dirname, '..', '..', 'postest', 'public', 'sql', 'products.sql'),
+      // Local development path
+      path.join(__dirname, '..', '..', 'postest', 'public', 'sql', 'products.sql'),
+      // Alternative path
+      path.join(__dirname, 'data', 'products.sql'),
+      // From environment variable
+      process.env.PRODUCTS_SQL_PATH
+    ].filter(Boolean);
     
-    console.log('🔍 Looking for products at:', productsSqlPath);
+    let products = [];
+    let lastModified = null;
+    let foundPath = null;
     
-    // Load products (will use cache if file hasn't changed)
-    const { products, lastModified } = loadProductsFromSQL();
+    // Try each path
+    for (const productsSqlPath of possiblePaths) {
+      if (productsSqlPath && fs.existsSync(productsSqlPath)) {
+        console.log('✅ Found products at:', productsSqlPath);
+        const result = loadProductsFromSQL(productsSqlPath);
+        if (result.products.length > 0) {
+          products = result.products;
+          lastModified = result.lastModified;
+          foundPath = productsSqlPath;
+          break;
+        }
+      }
+    }
     
     if (products.length > 0) {
       return res.json({
@@ -846,17 +868,36 @@ app.get('/api/products', (req, res) => {
         products: products,
         count: products.length,
         source: 'sql',
-        lastModified: lastModified
+        lastModified: lastModified,
+        path: foundPath
       });
     }
     
-    // If no file found, return empty array
+    // If no file found, try to load from environment variable (JSON)
+    if (process.env.POS_PRODUCTS_JSON) {
+      try {
+        const productsJson = JSON.parse(process.env.POS_PRODUCTS_JSON);
+        return res.json({
+          success: true,
+          products: productsJson,
+          count: productsJson.length,
+          source: 'env',
+          message: 'Loaded from environment variable'
+        });
+      } catch (e) {
+        console.error('Error parsing POS_PRODUCTS_JSON:', e);
+      }
+    }
+    
+    // Return empty array with helpful message
     res.json({
       success: true,
       products: [],
       count: 0,
       source: 'none',
-      message: 'ไม่พบไฟล์ database ของ POS ที่: ' + productsSqlPath
+      message: 'ไม่พบไฟล์ database ของ POS',
+      hint: 'กรุณาตั้งค่า POS_DB_PATH หรือ POS_PRODUCTS_JSON ใน Railway Variables',
+      searchedPaths: possiblePaths
     });
   } catch (error) {
     console.error('❌ Error loading products:', error);
@@ -2510,3 +2551,4 @@ app.listen(PORT, () => {
     console.log(`✅ LINE credentials loaded from .env file\n`);
   }
 });
+
