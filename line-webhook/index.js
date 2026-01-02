@@ -1584,7 +1584,8 @@ app.delete('/api/shipping-companies/:id', (req, res) => {
 
 // Auto-backup to GitHub (via webhook or manual trigger)
 // This endpoint can be called periodically to backup data
-app.post('/api/backup/github', async (req, res) => {
+// Support both GET and POST
+app.get('/api/backup/github', async (req, res) => {
   try {
     // Get all data
     const chatsData = {};
@@ -1601,24 +1602,38 @@ app.post('/api/backup/github', async (req, res) => {
     saveData();
     
     // Return data for manual GitHub commit
+    // Save backup to file for auto-restore
+    const backupData = {
+      chats: Object.values(chatsData),
+      messages: messagesData,
+      timestamp: Date.now()
+    };
+    
+    const backupFile = path.join(DATA_DIR, 'backup_data.json');
+    fs.writeFileSync(backupFile, JSON.stringify(backupData, null, 2), 'utf8');
+    
     res.json({
       success: true,
       message: 'Data ready for GitHub backup',
-      data: {
-        chats: chatsData,
-        messages: messagesData,
-        timestamp: Date.now()
-      },
+      data: backupData,
+      backupFile: backupFile,
       instructions: [
         '1. Download this JSON response',
-        '2. Commit to GitHub repository',
-        '3. After deploy, use /api/chats/sync/import to restore'
+        '2. Save as backup_data.json in line-webhook/data/',
+        '3. Commit to GitHub repository',
+        '4. After deploy, use /api/restore/auto to restore automatically'
       ]
     });
   } catch (error) {
     console.error('Backup error:', error);
     res.status(500).json({ error: 'Failed to create backup' });
   }
+});
+
+// Also support POST method
+app.post('/api/backup/github', async (req, res) => {
+  // Redirect to GET handler
+  return app._router.handle({ ...req, method: 'GET' }, res);
 });
 
 // Get all chat history (for cross-device access)
