@@ -1012,17 +1012,38 @@ app.post('/api/config/update', (req, res) => {
 
 // Webhook endpoint
 app.post('/webhook/line', async (req, res) => {
-  console.log('Received webhook event:');
+  console.log('📨 Received webhook event:');
   // Log the full event body for debugging
-  console.log(JSON.stringify(req.body, null, 2));
+  console.log('Request body:', JSON.stringify(req.body, null, 2));
 
   try {
+    // Check if body and events exist
+    if (!req.body) {
+      console.error('❌ Request body is missing');
+      return res.status(400).json({ error: 'Request body is missing' });
+    }
+
+    if (!req.body.events || !Array.isArray(req.body.events)) {
+      console.error('❌ Events array is missing or invalid:', req.body);
+      return res.status(400).json({ error: 'Events array is missing or invalid' });
+    }
+
+    if (req.body.events.length === 0) {
+      console.log('⚠️ No events in webhook request');
+      return res.status(200).json({ success: true, message: 'No events to process' });
+    }
+
+    console.log(`📋 Processing ${req.body.events.length} event(s)`);
+
     // Process all events in the request body
     await Promise.all(req.body.events.map(handleEvent));
+    
+    console.log('✅ All events processed successfully');
     // Send a 200 OK response to LINE
     res.status(200).json({ success: true });
   } catch (err) {
-    console.error('Error processing events:', err);
+    console.error('❌ Error processing events:', err);
+    console.error('Error stack:', err.stack);
     // It's still important to send a 200 OK response to LINE
     // to prevent webhook retries, but log the error internally.
     res.status(200).send();
@@ -1056,14 +1077,37 @@ async function downloadLineContent(messageId, fileExtension) {
  * @param {Object} event - The webhook event object.
  */
 async function handleEvent(event) {
+  // Validate event structure
+  if (!event) {
+    console.error('❌ Event is null or undefined');
+    return Promise.resolve(null);
+  }
+
+  if (!event.type) {
+    console.error('❌ Event type is missing:', event);
+    return Promise.resolve(null);
+  }
+
   // Handle different message types
   if (event.type !== 'message') {
+    console.log(`ℹ️ Skipping non-message event type: ${event.type}`);
+    return Promise.resolve(null);
+  }
+
+  // Validate event structure for message events
+  if (!event.source || !event.source.userId) {
+    console.error('❌ Event source or userId is missing:', event);
+    return Promise.resolve(null);
+  }
+
+  if (!event.message || !event.message.type) {
+    console.error('❌ Event message or message type is missing:', event);
     return Promise.resolve(null);
   }
 
   const userId = event.source.userId;
   const messageType = event.message.type;
-  const timestamp = event.timestamp;
+  const timestamp = event.timestamp || Date.now();
 
   try {
     // Get user profile from LINE
@@ -1188,6 +1232,14 @@ async function handleEvent(event) {
 
     // Store message
     messages.get(userId).push(messageData);
+
+    // Update chat's time and last message
+    if (chats.has(userId)) {
+      const chat = chats.get(userId);
+      chat.time = messageData.time;
+      chat.unread = (chat.unread || 0) + 1;
+      chats.set(userId, chat);
+    }
 
     // Save to file after receiving message
     saveData();
