@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
@@ -110,14 +110,14 @@ const AppleCard = ({ children, className = "" }) => (
   </div>
 );
 
-// Helper function to get logo URL
+// Helper function to get logo URL or SVG
 const getLogoUrl = (platform) => {
   switch (platform) {
     case 'shopee': return 'https://logo.clearbit.com/shopee.co.th';
     case 'lazada': return 'https://logo.clearbit.com/lazada.co.th';
     case 'tiktok': return 'https://logo.clearbit.com/tiktok.com';
     case 'facebook': return 'https://logo.clearbit.com/facebook.com';
-    case 'line': return 'https://logo.clearbit.com/line.me';
+    case 'line': return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjMDZDNzU1Ii8+CjxwYXRoIGQ9Ik0xMiA2TDEyLjU0IDkuNzNMMTYgMTBMMTIuNTQgMTAuMjdMMTIgMTRMMTEuNDYgMTAuMjdMOCAxMEwxMS40NiA5LjczTDEyIDZaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K'; // LINE@ logo (green with @ symbol)
     case 'instagram': return 'https://logo.clearbit.com/instagram.com';
     default: return null;
   }
@@ -125,6 +125,18 @@ const getLogoUrl = (platform) => {
 
 const PlatformIcon = ({ platform }) => {
   const logoUrl = getLogoUrl(platform);
+
+  // Special handling for LINE@ logo
+  if (platform === 'line') {
+    return (
+      <div className="w-4 h-4 rounded-full bg-[#06C755] flex items-center justify-center border border-white shadow-sm">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 1L6.545 4.365L9 5L6.545 5.635L6 9L5.455 5.635L3 5L5.455 4.365L6 1Z" fill="white"/>
+          <circle cx="6" cy="5" r="2" fill="none" stroke="white" strokeWidth="0.5"/>
+        </svg>
+      </div>
+    );
+  }
 
   if (logoUrl) {
     return (
@@ -154,6 +166,18 @@ const PlatformIcon = ({ platform }) => {
 
 const ShopIcon = ({ type }) => {
   if (type === 'all') return <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center"><Flame size={16} fill="currentColor" /></div>;
+
+  // Special handling for LINE@ logo
+  if (type === 'line') {
+    return (
+      <div className="w-8 h-8 rounded-full bg-[#06C755] flex items-center justify-center border border-gray-100 shadow-sm">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 2L10.908 7.275L16 8L10.908 8.725L10 14L9.092 8.725L4 8L9.092 7.275L10 2Z" fill="white"/>
+          <circle cx="10" cy="8" r="3" fill="none" stroke="white" strokeWidth="0.8"/>
+        </svg>
+      </div>
+    );
+  }
 
   const logoUrl = getLogoUrl(type);
   if (logoUrl) {
@@ -2093,6 +2117,13 @@ export default function OmniChatApp() {
           console.log('✅ LINE config loaded from localStorage and sent to backend');
         } catch (error) {
           console.error('Failed to load LINE config:', error);
+          if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+            console.error(`❌ Cannot connect to backend at ${API_URL}`);
+            console.error('💡 Please check:');
+            console.error('   1. Backend service is running on Railway');
+            console.error('   2. VITE_API_URL is set correctly in Railway Variables');
+            console.error('   3. Backend URL is accessible:', API_URL);
+          }
         }
       }
     };
@@ -2116,12 +2147,20 @@ export default function OmniChatApp() {
         }
       } catch (error) {
         console.error('Error fetching chats:', error);
+        // Check if backend is reachable
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          console.error(`❌ Cannot connect to backend at ${API_URL}`);
+          console.error('💡 Please check:');
+          console.error('   1. Backend service is running on Railway');
+          console.error('   2. VITE_API_URL is set correctly in Railway Variables');
+          console.error('   3. Backend URL is accessible:', API_URL);
+        }
       }
     };
 
     fetchChats();
-    // Poll for new chats every 3 seconds
-    const interval = setInterval(fetchChats, 3000);
+    // Poll for new chats every 10 seconds (reduced to save Railway credit)
+    const interval = setInterval(fetchChats, 10000);
     return () => clearInterval(interval);
   }, [activeTab, activeChatId]);
 
@@ -2153,21 +2192,42 @@ export default function OmniChatApp() {
           longitude: msg.longitude
         }));
         console.log('🗺️ Mapped messages:', mappedMessages); // Debug log
-        setMessages(mappedMessages);
+        
+        // Only update if messages actually changed (prevent unnecessary re-renders)
+        setMessages(prevMessages => {
+          // Compare by message IDs and content to avoid re-rendering if nothing changed
+          if (prevMessages.length === mappedMessages.length) {
+            const hasChanged = prevMessages.some((prevMsg, idx) => {
+              const newMsg = mappedMessages[idx];
+              return !newMsg || 
+                     prevMsg.id !== newMsg.id || 
+                     prevMsg.text !== newMsg.text ||
+                     prevMsg.videoUrl !== newMsg.videoUrl ||
+                     prevMsg.imageUrl !== newMsg.imageUrl;
+            });
+            
+            // If nothing changed, return previous to prevent re-render (especially for videos)
+            if (!hasChanged) {
+              return prevMessages;
+            }
+          }
+          
+          return mappedMessages;
+        });
       } catch (error) {
         console.error('Error fetching messages:', error);
       }
     };
 
     fetchMessages();
-    // Poll for new messages every 2 seconds
+    // Poll for new messages every 5 seconds (reduced to save Railway credit)
     const interval = setInterval(() => {
       try {
         fetchMessages();
       } catch (error) {
         console.debug('Error in message polling:', error);
       }
-    }, 2000);
+    }, 5000);
     return () => {
       if (interval) {
         clearInterval(interval);
@@ -2305,38 +2365,10 @@ export default function OmniChatApp() {
     }
   };
 
+  // File upload disabled - text only mode to save Railway credit
   const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file || !activeChatId) return;
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      console.log(`📤 Uploading ${file.name}...`);
-
-      const response = await fetch(`${API_URL}/api/chats/${activeChatId}/upload`, {
-        method: 'POST',
-        body: formData
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        console.log('✅ File uploaded and sent:', data);
-        // Message will appear via polling
-      } else {
-        console.error('Failed to upload file:', data);
-        const errorMsg = data.error || 'Unknown error';
-        const hintMsg = data.hint ? `\n\n${data.hint}` : '';
-        alert(`❌ ไม่สามารถส่งไฟล์ได้\n\n${errorMsg}${hintMsg}`);
-      }
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      alert('❌ เกิดข้อผิดพลาดในการส่งไฟล์\n\nกรุณาตรวจสอบ:\n1. Backend กำลังทำงาน\n2. ngrok กำลังทำงาน\n3. ngrok URL ถูกตั้งค่าใน Settings');
-    }
-
-    // Clear file input
+    e.preventDefault();
+    alert('การอัปโหลดไฟล์ถูกปิดใช้งานเพื่อประหยัด credit\nกรุณาใช้เฉพาะข้อความเท่านั้น');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -2729,6 +2761,11 @@ export default function OmniChatApp() {
 
   // --- Renderers ---
 
+  // Video refs to prevent reload on polling
+  const videoRefs = useRef(new Map());
+  // Cache for video elements to prevent re-render
+  const videoElementCache = useRef(new Map());
+
   const renderMessageBubble = (msg) => {
     const isAdmin = msg.sender === 'admin';
     let content;
@@ -2762,6 +2799,57 @@ export default function OmniChatApp() {
       const videoUrl = msg.videoUrl.startsWith('http')
         ? msg.videoUrl
         : `${API_URL}${msg.videoUrl}`;
+      
+      const videoKey = `video-${msg.id || videoUrl}`;
+      
+      // Use cached video element if available to prevent re-render
+      let videoElement = videoElementCache.current.get(videoKey);
+      
+      if (!videoElement) {
+        videoElement = (
+          <video
+            ref={(el) => {
+              if (el) {
+                const existingRef = videoRefs.current.get(videoKey);
+                if (!existingRef || existingRef !== el) {
+                  videoRefs.current.set(videoKey, el);
+                  // Only set src if not already set to prevent reload
+                  if (!el.src || el.src === '') {
+                    el.src = videoUrl;
+                  }
+                  el.pause();
+                  el.currentTime = 0;
+                }
+              }
+            }}
+            key={videoKey} // Use stable key to prevent reload
+            preload="none" // Don't preload to prevent reload
+            className="rounded-xl max-w-full h-auto"
+            style={{ maxHeight: '300px' }}
+            controls={false}
+            playsInline
+            muted
+            onError={(e) => {
+              console.error('Video load error:', videoUrl);
+              // Show placeholder if video fails to load
+              e.target.style.display = 'none';
+              const parent = e.target.parentElement;
+              if (parent && !parent.querySelector('.video-error')) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'video-error bg-gray-100 rounded-xl p-4 text-center';
+                errorDiv.innerHTML = '<p class="text-sm text-gray-500">🎥 วิดีโอไม่สามารถโหลดได้</p><p class="text-xs text-gray-400 mt-1">ไฟล์อาจถูกลบหรือไม่สามารถเข้าถึงได้</p>';
+                parent.appendChild(errorDiv);
+              }
+            }}
+            onLoadedMetadata={(e) => {
+              // Prevent auto-play and ensure video doesn't reload
+              e.target.pause();
+              e.target.currentTime = 0;
+            }}
+          />
+        );
+        videoElementCache.current.set(videoKey, videoElement);
+      }
 
       content = (
         <div className="max-w-sm">
@@ -2769,12 +2857,7 @@ export default function OmniChatApp() {
             className="relative rounded-xl overflow-hidden cursor-pointer group"
             onClick={() => setPreviewMedia({ type: 'video', url: videoUrl })}
           >
-            <video
-              src={videoUrl}
-              preload="metadata"
-              className="rounded-xl max-w-full h-auto"
-              style={{ maxHeight: '300px' }}
-            />
+            {videoElement}
             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition flex items-center justify-center pointer-events-none">
               <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
                 <Play size={32} className="text-[#1D1D1F] ml-1" fill="currentColor" />
@@ -3102,10 +3185,12 @@ export default function OmniChatApp() {
             />
           ) : previewMedia.type === 'video' ? (
             <video
+              key={previewMedia.url} // Use URL as key to prevent reload
               src={previewMedia.url}
               controls
               autoPlay
               preload="metadata"
+              playsInline
               controlsList="nodownload"
               className="max-w-full max-h-[90vh] rounded-lg shadow-2xl"
             />
@@ -3353,7 +3438,7 @@ export default function OmniChatApp() {
                     <p>No messages yet</p>
                   </div>
                 ) : messages.map(msg => (
-                  <div key={msg.id}>{renderMessageBubble(msg)}</div>
+                  <div key={`msg-${msg.id}-${msg.timestamp || Date.now()}`}>{renderMessageBubble(msg)}</div>
                 ))}
                 <div ref={messagesEndRef} />
               </div>
@@ -3361,7 +3446,8 @@ export default function OmniChatApp() {
               {/* Input Area */}
               <div className="p-4 bg-white border-t border-gray-100">
                 <div className="flex items-center gap-3">
-                  <button
+                  {/* File upload disabled - text only mode to save Railway credit */}
+                  {/* <button
                     onClick={() => fileInputRef.current.click()}
                     className="text-gray-400 hover:text-[#007AFF] transition"
                     title="แนบไฟล์, รูปภาพ, วิดีโอ"
@@ -3374,7 +3460,7 @@ export default function OmniChatApp() {
                     className="hidden"
                     onChange={handleFileUpload}
                     accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar"
-                  />
+                  /> */}
 
                   <button onClick={() => setShowBillModal(true)} className="text-gray-400 hover:text-[#007AFF] transition" title="สร้างบิลใหม่">
                     <Receipt size={22} strokeWidth={2} />

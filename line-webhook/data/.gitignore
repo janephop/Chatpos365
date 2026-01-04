@@ -2,3 +2,6 @@
 *.json
 *.csv
 
+# But allow backup_data.json for restore
+!backup_data.json
+

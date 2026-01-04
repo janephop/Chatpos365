@@ -224,6 +224,45 @@ try {
 // Load data on startup
 loadData();
 
+// Auto-restore from backup if exists (after deploy)
+const backupFile = path.join(DATA_DIR, 'backup_data.json');
+if (fs.existsSync(backupFile)) {
+  try {
+    console.log('📦 Found backup file, attempting auto-restore...');
+    const backupData = JSON.parse(fs.readFileSync(backupFile, 'utf8'));
+    
+    // Restore chats
+    if (backupData.chats && Array.isArray(backupData.chats)) {
+      backupData.chats.forEach(chat => {
+        const userId = chat.userId || chat.id;
+        chats.set(userId, chat);
+      });
+      console.log(`✅ Restored ${backupData.chats.length} chats from backup`);
+    }
+    
+    // Restore messages
+    if (backupData.messages && typeof backupData.messages === 'object') {
+      Object.entries(backupData.messages).forEach(([userId, msgs]) => {
+        messages.set(userId, msgs);
+      });
+      console.log(`✅ Restored messages from ${Object.keys(backupData.messages).length} users`);
+    }
+    
+    // Save to database and files
+    if (db) {
+      // Sync to database
+      saveData();
+    } else {
+      saveData();
+    }
+    
+    console.log('✅ Auto-restore completed successfully');
+  } catch (error) {
+    console.error('❌ Auto-restore failed:', error.message);
+    console.log('⚠️  Continuing without restore');
+  }
+}
+
 // Setup Express server
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -233,6 +272,15 @@ app.use(cors({
   origin: true, // Allow all origins (including ngrok)
   credentials: true
 }));
+
+// Add CORS headers for video streaming
+app.use('/uploads/:filename', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Range');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  next();
+});
 
 // Handle OPTIONS for CORS preflight
 app.options('/uploads/:filename', (req, res) => {
@@ -284,7 +332,15 @@ app.get('/uploads/:filename', (req, res) => {
   
   // Check if file exists
   if (!fs.existsSync(filePath)) {
-    return res.status(404).send('File not found');
+    console.error(`❌ File not found: ${filePath}`);
+    console.error(`   Uploads directory: ${UPLOADS_DIR}`);
+    console.error(`   Available files:`, fs.existsSync(UPLOADS_DIR) ? fs.readdirSync(UPLOADS_DIR).slice(0, 10) : 'Directory does not exist');
+    return res.status(404).json({ 
+      error: 'File not found',
+      filename: filename,
+      path: filePath,
+      message: 'ไฟล์ถูกลบหรือไม่สามารถเข้าถึงได้ (Railway ephemeral storage)'
+    });
   }
 
   const stat = fs.statSync(filePath);
@@ -387,6 +443,11 @@ app.get('/api/download/:filename', (req, res) => {
 // LINE Webhook middleware MUST come BEFORE express.json()
 // Because LINE middleware needs raw body (Buffer) to verify signature
 app.use('/webhook/line', (req, res, next) => {
+  // Skip signature verification for HEAD requests (used for testing)
+  if (req.method === 'HEAD') {
+    return next();
+  }
+  
   // Check if configuration is set
   if (!config.channelAccessToken || !config.channelSecret) {
     console.error('❌ LINE configuration not set!');
@@ -414,6 +475,26 @@ app.use('/webhook/line', (req, res, next) => {
 // เพิ่ม limit เป็น 50MB เพื่อรองรับข้อมูลบิลจำนวนมาก
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Root route - Health check
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'LINE Webhook Server is running',
+    version: '1.0.0',
+    endpoints: {
+      webhook: '/webhook/line',
+      config: '/config',
+      api: {
+        chats: '/api/chats',
+        messages: '/api/chats/:userId/messages',
+        bills: '/api/bills',
+        products: '/api/products',
+        settings: '/api/settings'
+      }
+    }
+  });
+});
 
 // API endpoint to get settings
 app.get('/api/settings', (req, res) => {
@@ -497,6 +578,7 @@ app.get('/api/chats', (req, res) => {
           name: chat.name,
           avatar: chat.avatar,
           platform: chat.platform,
+          shopId: chat.platform === 'line' ? 'shop_line_1' : undefined, // Map platform to shopId for filtering
           online: chat.online === 1,
           time: lastMessage?.time || chat.time,
           unread: chat.unread,
@@ -515,6 +597,7 @@ app.get('/api/chats', (req, res) => {
     // Fallback to memory (in-memory Map)
     chatList = Array.from(chats.values()).map(chat => ({
       ...chat,
+      shopId: chat.platform === 'line' ? 'shop_line_1' : undefined, // Map platform to shopId for filtering
       messageCount: messages.get(chat.userId)?.length || 0,
       lastMessage: messages.get(chat.userId)?.[messages.get(chat.userId).length - 1]?.text || '',
       time: messages.get(chat.userId)?.[messages.get(chat.userId).length - 1]?.time || chat.time
@@ -611,17 +694,36 @@ let productsCache = {
 };
 
 // Function to load products from SQL file
-function loadProductsFromSQL() {
+function loadProductsFromSQL(productsSqlPath) {
   try {
-    const posDbPath = path.join(__dirname, '..', '..', 'postest');
-    const productsSqlPath = path.join(posDbPath, 'public', 'sql', 'products.sql');
+    // Use provided path or try default paths
+    let filePath = productsSqlPath;
+    
+    if (!filePath) {
+      // Try multiple default paths
+      const defaultPaths = [
+        path.join(__dirname, '..', '..', 'postest', 'public', 'sql', 'products.sql'),
+        path.join(__dirname, 'data', 'products.sql'),
+        process.env.POS_DB_PATH
+      ].filter(Boolean);
+      
+      for (const p of defaultPaths) {
+        if (p && fs.existsSync(p)) {
+          filePath = p;
+          break;
+        }
+      }
+    }
     
     // Check if file exists
-    if (!fs.existsSync(productsSqlPath)) {
-      console.warn(`⚠️ Products SQL file not found at: ${productsSqlPath}`);
-      console.warn('   Please check if the path is correct relative to line-webhook folder.');
+    if (!filePath || !fs.existsSync(filePath)) {
+      console.warn(`⚠️ Products SQL file not found`);
+      if (filePath) console.warn(`   Searched: ${filePath}`);
+      console.warn('   Please set POS_DB_PATH environment variable or place products.sql in data/ folder.');
       return { products: [], lastModified: null };
     }
+    
+    const productsSqlPath = filePath;
     
     // Get file modification time
     const stats = fs.statSync(productsSqlPath);
@@ -749,13 +851,35 @@ function loadProductsFromSQL() {
 // API endpoint to get products from POS database
 app.get('/api/products', (req, res) => {
   try {
-    const posDbPath = path.join(__dirname, '..', '..', 'postest');
-    const productsSqlPath = path.join(posDbPath, 'public', 'sql', 'products.sql');
+    // Try multiple paths for POS database
+    const possiblePaths = [
+      // Railway/Production path
+      process.env.POS_DB_PATH || path.join(__dirname, '..', '..', 'postest', 'public', 'sql', 'products.sql'),
+      // Local development path
+      path.join(__dirname, '..', '..', 'postest', 'public', 'sql', 'products.sql'),
+      // Alternative path
+      path.join(__dirname, 'data', 'products.sql'),
+      // From environment variable
+      process.env.PRODUCTS_SQL_PATH
+    ].filter(Boolean);
     
-    console.log('🔍 Looking for products at:', productsSqlPath);
+    let products = [];
+    let lastModified = null;
+    let foundPath = null;
     
-    // Load products (will use cache if file hasn't changed)
-    const { products, lastModified } = loadProductsFromSQL();
+    // Try each path
+    for (const productsSqlPath of possiblePaths) {
+      if (productsSqlPath && fs.existsSync(productsSqlPath)) {
+        console.log('✅ Found products at:', productsSqlPath);
+        const result = loadProductsFromSQL(productsSqlPath);
+        if (result.products.length > 0) {
+          products = result.products;
+          lastModified = result.lastModified;
+          foundPath = productsSqlPath;
+          break;
+        }
+      }
+    }
     
     if (products.length > 0) {
       return res.json({
@@ -763,17 +887,36 @@ app.get('/api/products', (req, res) => {
         products: products,
         count: products.length,
         source: 'sql',
-        lastModified: lastModified
+        lastModified: lastModified,
+        path: foundPath
       });
     }
     
-    // If no file found, return empty array
+    // If no file found, try to load from environment variable (JSON)
+    if (process.env.POS_PRODUCTS_JSON) {
+      try {
+        const productsJson = JSON.parse(process.env.POS_PRODUCTS_JSON);
+        return res.json({
+          success: true,
+          products: productsJson,
+          count: productsJson.length,
+          source: 'env',
+          message: 'Loaded from environment variable'
+        });
+      } catch (e) {
+        console.error('Error parsing POS_PRODUCTS_JSON:', e);
+      }
+    }
+    
+    // Return empty array with helpful message
     res.json({
       success: true,
       products: [],
       count: 0,
       source: 'none',
-      message: 'ไม่พบไฟล์ database ของ POS ที่: ' + productsSqlPath
+      message: 'ไม่พบไฟล์ database ของ POS',
+      hint: 'กรุณาตั้งค่า POS_DB_PATH หรือ POS_PRODUCTS_JSON ใน Railway Variables',
+      searchedPaths: possiblePaths
     });
   } catch (error) {
     console.error('❌ Error loading products:', error);
@@ -853,7 +996,14 @@ app.post('/api/chats/:userId/messages', async (req, res) => {
 });
 
 // API endpoint to upload and send file/image to LINE user
+// DISABLED: Text only mode to save Railway credit
 app.post('/api/chats/:userId/upload', upload.single('file'), async (req, res) => {
+  return res.status(403).json({ 
+    error: 'File upload disabled',
+    message: 'การอัปโหลดไฟล์ถูกปิดใช้งานเพื่อประหยัด credit กรุณาใช้เฉพาะข้อความเท่านั้น'
+  });
+  
+  /* DISABLED CODE - Text only mode
   const { userId } = req.params;
   
   if (!req.file) {
@@ -861,12 +1011,27 @@ app.post('/api/chats/:userId/upload', upload.single('file'), async (req, res) =>
   }
 
   try {
-    // Check if ngrok URL is configured
-    if (!config.ngrokUrl || config.ngrokUrl === '' || config.ngrokUrl === 'http://localhost:3000') {
-      console.error('❌ ngrok URL not configured:', config.ngrokUrl);
+    // Determine base URL: use Railway URL if available, otherwise use ngrok URL
+    // Railway sets RAILWAY_PUBLIC_DOMAIN or we can use request hostname
+    let baseUrl = config.ngrokUrl;
+    
+    // Check if running on Railway (production)
+    if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+      baseUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+      console.log('✅ Using Railway URL:', baseUrl);
+    } else if (process.env.RAILWAY_ENVIRONMENT === 'production' || process.env.NODE_ENV === 'production') {
+      // Try to get from request or use known Railway URL
+      const railwayUrl = process.env.RAILWAY_URL || 'https://chatpos365-production.up.railway.app';
+      baseUrl = railwayUrl;
+      console.log('✅ Using Railway URL (from env):', baseUrl);
+    }
+    
+    // Fallback check: if ngrok URL is not set and we're not on Railway
+    if (!baseUrl || baseUrl === '' || baseUrl === 'http://localhost:3000') {
+      console.error('❌ Base URL not configured:', baseUrl);
       return res.status(400).json({ 
-        error: 'กรุณาตั้งค่า ngrok URL ในหน้า Settings → LINE Official Account ก่อนส่งไฟล์',
-        hint: 'ต้องการ ngrok URL เพื่อให้ LINE เข้าถึงไฟล์ได้'
+        error: 'กรุณาตั้งค่า ngrok URL หรือ Railway URL ในหน้า Settings → LINE Official Account ก่อนส่งไฟล์',
+        hint: 'ต้องการ URL เพื่อให้ LINE เข้าถึงไฟล์ได้'
       });
     }
 
@@ -876,12 +1041,12 @@ app.post('/api/chats/:userId/upload', upload.single('file'), async (req, res) =>
     const mimeType = req.file.mimetype;
     const fileExtension = path.extname(originalName).toLowerCase();
     const fileUrl = `/uploads/${filename}`;
-    const fullUrl = `${config.ngrokUrl}${fileUrl}`;
+    const fullUrl = `${baseUrl}${fileUrl}`;
     
     console.log(`📤 Preparing to send ${mimeType} file to LINE`);
     console.log(`   - File: ${originalName}`);
     console.log(`   - Full URL: ${fullUrl}`);
-    console.log(`   - Config ngrok: ${config.ngrokUrl}`);
+    console.log(`   - Base URL: ${baseUrl}`);
 
     let lineMessage;
     let messageData = {
@@ -904,16 +1069,17 @@ app.post('/api/chats/:userId/upload', upload.single('file'), async (req, res) =>
       messageData.text = '📷 ส่งรูปภาพ';
     } 
     else if (mimeType.startsWith('video/')) {
-      // Send video as a clickable link (workaround for ngrok streaming issues)
-      // This ensures customers can always view the full video in their browser
+      // Send as video message (LINE will display it as a video player)
+      // LINE requires HTTPS URL and the video must be accessible
       lineMessage = {
-        type: 'text',
-        text: `🎥 วิดีโอ: ${originalName}\n\n📹 คลิกเพื่อดูวิดีโอ:\n${fullUrl}\n\n(เปิดในเบราว์เซอร์เพื่อรับชมเต็มรูปแบบ)`
+        type: 'video',
+        originalContentUrl: fullUrl,
+        previewImageUrl: fullUrl // Use video URL as preview (LINE will extract frame)
       };
       messageData.type = 'video';
       messageData.videoUrl = fileUrl;
       messageData.text = '🎥 ส่งวิดีโอ';
-      console.log(`   - Video URL sent as link: ${fullUrl}`);
+      console.log(`   - Video sent as video message: ${fullUrl}`);
     }
     else if (mimeType.startsWith('audio/')) {
       // Send as audio message
@@ -945,7 +1111,47 @@ app.post('/api/chats/:userId/upload', upload.single('file'), async (req, res) =>
     if (!messages.has(userId)) {
       messages.set(userId, []);
     }
+    
+    // Ensure message has a unique ID
+    if (!messageData.id) {
+      messageData.id = `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+    
     messages.get(userId).push(messageData);
+
+    // Save to database immediately
+    if (db) {
+      try {
+        const stmt = db.prepare(`
+          INSERT OR REPLACE INTO messages 
+          (id, user_id, text, sender, type, time, timestamp, image_url, video_url, 
+           audio_url, file_url, file_name, sticker_id, package_id, latitude, longitude)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        
+        stmt.run(
+          messageData.id,
+          userId,
+          messageData.text || '',
+          messageData.sender || 'admin',
+          messageData.type || 'text',
+          messageData.time || '',
+          messageData.timestamp || Date.now(),
+          messageData.imageUrl || null,
+          messageData.videoUrl || null,
+          messageData.audioUrl || null,
+          messageData.fileUrl || null,
+          messageData.fileName || null,
+          messageData.stickerId || null,
+          messageData.packageId || null,
+          messageData.latitude || null,
+          messageData.longitude || null
+        );
+        console.log(`💾 Message saved to database: ${messageData.id}`);
+      } catch (dbError) {
+        console.error('⚠️  Database save error:', dbError.message);
+      }
+    }
 
     // Save to file
     saveData();
@@ -968,6 +1174,7 @@ app.post('/api/chats/:userId/upload', upload.single('file'), async (req, res) =>
       details: error.response?.data || 'Unknown error'
     });
   }
+  */
 });
 
 // API endpoint to update LINE configuration
@@ -1008,6 +1215,12 @@ app.post('/api/config/update', (req, res) => {
       error: 'Failed to save configuration file' 
     });
   }
+});
+
+// Webhook endpoint - Support HEAD for testing
+app.head('/webhook/line', (req, res) => {
+  // HEAD request for testing connection (no body needed)
+  res.status(200).end();
 });
 
 // Webhook endpoint
@@ -1161,54 +1374,28 @@ async function handleEvent(event) {
         break;
 
       case 'image':
-        try {
-          const imageUrl = await downloadLineContent(event.message.id, 'jpg');
-          messageData.imageUrl = imageUrl;
-          messageData.text = '📷 ส่งรูปภาพ';
-          console.log(`📷 Image received from ${userProfile.displayName}, saved to ${imageUrl}`);
-        } catch (error) {
-          console.error('Error downloading image:', error);
-          messageData.text = '📷 รูปภาพ (ดาวน์โหลดไม่สำเร็จ)';
-        }
+        // Text only mode - skip downloading images to save Railway credit
+        messageData.text = '📷 ส่งรูปภาพ (โหมดข้อความเท่านั้น - ไม่สามารถดูรูปภาพได้)';
+        console.log(`📷 Image received from ${userProfile.displayName} (not downloaded - text only mode)`);
         break;
 
       case 'video':
-        try {
-          const videoUrl = await downloadLineContent(event.message.id, 'mp4');
-          messageData.videoUrl = videoUrl;
-          messageData.text = '🎥 ส่งวิดีโอ';
-          console.log(`🎥 Video received from ${userProfile.displayName}, saved to ${videoUrl}`);
-        } catch (error) {
-          console.error('Error downloading video:', error);
-          messageData.text = '🎥 วิดีโอ (ดาวน์โหลดไม่สำเร็จ)';
-        }
+        // Text only mode - skip downloading videos to save Railway credit
+        messageData.text = '🎥 ส่งวิดีโอ (โหมดข้อความเท่านั้น - ไม่สามารถดูวิดีโอได้)';
+        console.log(`🎥 Video received from ${userProfile.displayName} (not downloaded - text only mode)`);
         break;
 
       case 'audio':
-        try {
-          const audioUrl = await downloadLineContent(event.message.id, 'm4a');
-          messageData.audioUrl = audioUrl;
-          messageData.text = '🎵 ส่งเสียง';
-          console.log(`🎵 Audio received from ${userProfile.displayName}, saved to ${audioUrl}`);
-        } catch (error) {
-          console.error('Error downloading audio:', error);
-          messageData.text = '🎵 ไฟล์เสียง (ดาวน์โหลดไม่สำเร็จ)';
-        }
+        // Text only mode - skip downloading audio to save Railway credit
+        messageData.text = '🎵 ส่งเสียง (โหมดข้อความเท่านั้น - ไม่สามารถฟังเสียงได้)';
+        console.log(`🎵 Audio received from ${userProfile.displayName} (not downloaded - text only mode)`);
         break;
 
       case 'file':
-        try {
-          const fileName = event.message.fileName || 'document';
-          const fileExtension = fileName.split('.').pop() || 'bin';
-          const fileUrl = await downloadLineContent(event.message.id, fileExtension);
-          messageData.fileUrl = fileUrl;
-          messageData.fileName = fileName;
-          messageData.text = `📎 ส่งไฟล์: ${fileName}`;
-          console.log(`📎 File received from ${userProfile.displayName}: ${fileName}`);
-        } catch (error) {
-          console.error('Error downloading file:', error);
-          messageData.text = '📎 ไฟล์ (ดาวน์โหลดไม่สำเร็จ)';
-        }
+        // Text only mode - skip downloading files to save Railway credit
+        const fileName = event.message.fileName || 'document';
+        messageData.text = `📎 ส่งไฟล์: ${fileName} (โหมดข้อความเท่านั้น - ไม่สามารถดาวน์โหลดไฟล์ได้)`;
+        console.log(`📎 File received from ${userProfile.displayName}: ${fileName} (not downloaded - text only mode)`);
         break;
 
       case 'sticker':
@@ -1611,6 +1798,60 @@ app.delete('/api/shipping-companies/:id', (req, res) => {
 // ============================================
 // Chat History & Sync APIs (สำหรับเครื่องอื่น)
 // ============================================
+
+// Auto-backup to GitHub (via webhook or manual trigger)
+// This endpoint can be called periodically to backup data
+// Support both GET and POST
+app.get('/api/backup/github', async (req, res) => {
+  try {
+    // Get all data
+    const chatsData = {};
+    chats.forEach((chat, userId) => {
+      chatsData[userId] = chat;
+    });
+    
+    const messagesData = {};
+    messages.forEach((msgs, userId) => {
+      messagesData[userId] = msgs;
+    });
+    
+    // Save to JSON files first
+    saveData();
+    
+    // Return data for manual GitHub commit
+    // Save backup to file for auto-restore
+    const backupData = {
+      chats: Object.values(chatsData),
+      messages: messagesData,
+      timestamp: Date.now()
+    };
+    
+    const backupFile = path.join(DATA_DIR, 'backup_data.json');
+    fs.writeFileSync(backupFile, JSON.stringify(backupData, null, 2), 'utf8');
+    
+    res.json({
+      success: true,
+      message: 'Data ready for GitHub backup',
+      data: backupData,
+      backupFile: backupFile,
+      instructions: [
+        '1. Download this JSON response',
+        '2. Save as backup_data.json in line-webhook/data/',
+        '3. Commit to GitHub repository',
+        '4. After deploy, use /api/restore/auto to restore automatically'
+      ]
+    });
+  } catch (error) {
+    console.error('Backup error:', error);
+    res.status(500).json({ error: 'Failed to create backup' });
+  }
+});
+
+// Also support POST method
+app.post('/api/backup/github', async (req, res) => {
+  // Redirect to GET handler
+  return app._router.handle({ ...req, method: 'GET' }, res);
+});
 
 // Get all chat history (for cross-device access)
 app.get('/api/chats/history/all', (req, res) => {
@@ -2235,6 +2476,120 @@ app.get('/api/database/info', (req, res) => {
   }
 });
 
+// Auto-restore from backup (if backup file exists)
+app.post('/api/restore/auto', async (req, res) => {
+  try {
+    // Check if backup file exists in data directory
+    const backupFile = path.join(DATA_DIR, 'backup_data.json');
+    
+    if (!fs.existsSync(backupFile)) {
+      return res.json({
+        success: false,
+        message: 'No backup file found. Please backup first.',
+        backupFile: backupFile
+      });
+    }
+    
+    // Load backup data
+    const backupData = JSON.parse(fs.readFileSync(backupFile, 'utf8'));
+    
+    // Import chats
+    if (backupData.chats && Array.isArray(backupData.chats)) {
+      if (db) {
+        const stmt = db.prepare(`
+          INSERT OR REPLACE INTO chats 
+          (user_id, name, avatar, platform, online, time, unread, is_pinned, tags, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%s', 'now'))
+        `);
+        
+        const insertMany = db.transaction((chats) => {
+          chats.forEach(chat => {
+            stmt.run(
+              chat.userId || chat.id,
+              chat.name || '',
+              chat.avatar || '',
+              chat.platform || 'line',
+              chat.online ? 1 : 0,
+              chat.time || '',
+              chat.unread || 0,
+              chat.isPinned ? 1 : 0,
+              JSON.stringify(chat.tags || [])
+            );
+          });
+        });
+        
+        insertMany(backupData.chats);
+      }
+      
+      // Update memory
+      backupData.chats.forEach(chat => {
+        const userId = chat.userId || chat.id;
+        chats.set(userId, chat);
+      });
+    }
+    
+    // Import messages
+    if (backupData.messages && typeof backupData.messages === 'object') {
+      if (db) {
+        const stmt = db.prepare(`
+          INSERT OR REPLACE INTO messages 
+          (id, user_id, text, sender, type, time, timestamp, image_url, video_url, 
+           audio_url, file_url, file_name, sticker_id, package_id, latitude, longitude)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        
+        const insertMany = db.transaction((messagesObj) => {
+          for (const [userId, msgs] of Object.entries(messagesObj)) {
+            msgs.forEach((msg, index) => {
+              const msgId = msg.id || `${userId}_${index}_${msg.timestamp || Date.now()}`;
+              stmt.run(
+                msgId,
+                userId,
+                msg.text || '',
+                msg.sender || 'user',
+                msg.type || 'text',
+                msg.time || '',
+                msg.timestamp || Date.now(),
+                msg.imageUrl || null,
+                msg.videoUrl || null,
+                msg.audioUrl || null,
+                msg.fileUrl || null,
+                msg.fileName || null,
+                msg.stickerId || null,
+                msg.packageId || null,
+                msg.latitude || null,
+                msg.longitude || null
+              );
+            });
+          }
+        });
+        
+        insertMany(backupData.messages);
+      }
+      
+      // Update memory
+      Object.entries(backupData.messages).forEach(([userId, msgs]) => {
+        messages.set(userId, msgs);
+      });
+    }
+    
+    // Save to JSON files
+    saveData();
+    
+    res.json({
+      success: true,
+      message: 'Data restored successfully',
+      restored: {
+        chats: backupData.chats?.length || 0,
+        messages: Object.keys(backupData.messages || {}).length
+      }
+    });
+  } catch (error) {
+    console.error('Restore error:', error);
+    res.status(500).json({ error: 'Failed to restore data', message: error.message });
+  }
+});
+
 // Sync JSON to Database
 app.post('/api/database/sync', (req, res) => {
   try {
@@ -2268,3 +2623,4 @@ app.listen(PORT, () => {
     console.log(`✅ LINE credentials loaded from .env file\n`);
   }
 });
+

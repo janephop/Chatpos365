@@ -38,10 +38,23 @@ const getApiUrl = () => {
   // Backend ควรอยู่ที่ yyyyy.railway.app (ต้องตั้ง VITE_API_URL)
   // หรือถ้าใช้ subdomain: api.xxxxx.railway.app
   if (hostname.includes('.railway.app') || hostname.includes('.up.railway.app')) {
-    // For Railway, prefer VITE_API_URL, otherwise try to detect
-    // If VITE_API_URL is not set, user should set it manually
-    // Default: assume backend is on different Railway service
-    // (User must set VITE_API_URL in Railway environment variables)
+    // For Railway, try to use VITE_API_URL from build time
+    // If not available, try to read from window.__ENV__ (runtime injection)
+    // Or use hardcoded backend URL for Railway
+    if (import.meta.env.VITE_API_URL) {
+      return import.meta.env.VITE_API_URL;
+    }
+    
+    // Try runtime injection (if Railway injects env vars at runtime)
+    if (window.__ENV__ && window.__ENV__.VITE_API_URL) {
+      return window.__ENV__.VITE_API_URL;
+    }
+    
+    // Hardcoded fallback for Railway (since we know the backend URL)
+    // This is a workaround for Vite build-time env vars not being available
+    const knownBackendUrl = 'https://chatpos365-production.up.railway.app';
+    console.warn('⚠️ VITE_API_URL not found at build time, using hardcoded backend URL:', knownBackendUrl);
+    return knownBackendUrl;
   }
   
   // If external domain (ngrok, cloud, etc.), try to detect backend URL
@@ -59,9 +72,26 @@ const getApiUrl = () => {
 
 export const API_URL = getApiUrl();
 
-// Log API URL for debugging (only in development)
-if (import.meta.env.DEV) {
-  console.log('🔗 API URL:', API_URL);
-  console.log('🌐 Frontend URL:', window.location.origin);
+// Log API URL for debugging (always log in production to help debug)
+console.log('🔗 API URL:', API_URL);
+console.log('🌐 Frontend URL:', window.location.origin);
+console.log('🔍 VITE_API_URL from env:', import.meta.env.VITE_API_URL);
+console.log('🔍 All env vars:', import.meta.env);
+
+// Test backend connection on startup
+if (typeof window !== 'undefined') {
+  fetch(API_URL)
+    .then(res => res.json())
+    .then(data => {
+      console.log('✅ Backend is reachable:', data);
+    })
+    .catch(error => {
+      console.error('❌ Backend is NOT reachable:', error);
+      console.error('💡 Please check:');
+      console.error('   1. Backend service is running on Railway');
+      console.error('   2. VITE_API_URL is set correctly in Railway Variables');
+      console.error('   3. Backend URL:', API_URL);
+      console.error('   4. Check Railway Dashboard → Backend Service → Logs');
+    });
 }
 

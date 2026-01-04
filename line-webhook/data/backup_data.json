@@ -1,0 +1,38 @@
+{
+  "chats": [
+    {
+      "id": "Ud7609ac95512e1e4e4950970683b6796",
+      "userId": "Ud7609ac95512e1e4e4950970683b6796",
+      "name": "Somtui (J)",
+      "avatar": "https://sprofile.line-scdn.net/0hBN00MMiTHWEdSQi7OU1jHm0ZHgs-OERzOHsBUCwcFwYoKls_OHoGDy0cRlR1eAg3OXhRAn0dRlURWmoHAx_hVRp5QFAhf1k3My9bgA",
+      "platform": "line",
+      "online": true,
+      "time": "12:00",
+      "unread": 0,
+      "isPinned": false,
+      "tags": []
+    }
+  ],
+  "messages": {
+    "Ud7609ac95512e1e4e4950970683b6796": [
+      {
+        "id": "594792421406802516",
+        "sender": "user",
+        "time": "12:00",
+        "timestamp": 1767355213945,
+        "type": "text",
+        "text": "."
+      },
+      {
+        "id": 1767355225187,
+        "text": ",ายัง",
+        "sender": "admin",
+        "type": "text",
+        "time": "12:00",
+        "timestamp": 1767355225187
+      }
+    ]
+  },
+  "timestamp": 1767355252864
+}
+

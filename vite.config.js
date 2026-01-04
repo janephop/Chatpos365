@@ -19,5 +19,11 @@ export default defineConfig({
             'localhost',
             '127.0.0.1'
         ]
+    },
+    // Explicitly define environment variables for Vite
+    // This ensures VITE_* variables are available at build time
+    define: {
+        // Vite automatically exposes VITE_* variables via import.meta.env
+        // But we can explicitly define them here if needed
     }
 })
