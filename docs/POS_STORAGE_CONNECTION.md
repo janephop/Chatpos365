@@ -268,3 +268,4 @@ INSERT INTO products (id, sku, barcode, name, price, price2, price3, price4, pri
 3. ตรวจสอบ Products API endpoint
 4. ดูคู่มือใน `docs/RAILWAY_DEPLOY_GUIDE.md`
 
+

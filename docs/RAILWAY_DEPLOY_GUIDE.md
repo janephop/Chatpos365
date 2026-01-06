@@ -15,6 +15,7 @@
 ### 1. สิ่งที่ต้องมี
 - ✅ GitHub Account
 - ✅ Railway Account (สมัครที่ https://railway.app)
+
 - ✅ โค้ดโปรเจคพร้อมแล้ว
 - ✅ ไฟล์ `products.sql` จาก POS (ถ้ามี)
 
