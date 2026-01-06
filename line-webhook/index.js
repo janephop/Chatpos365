@@ -62,8 +62,25 @@ let settings = {
 };
 
 // Load data from files on startup
+// DISABLED: History loading disabled - start fresh each time
 function loadData() {
   try {
+    // History loading is disabled - start with empty memory
+    // This saves Railway storage and ensures no old data persists
+    console.log('ℹ️  History loading disabled - starting fresh (no chat/message history)');
+    
+    // Only load settings (not chat/message history)
+    if (fs.existsSync(SETTINGS_FILE)) {
+      try {
+        const savedSettings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+        settings = { ...settings, ...savedSettings };
+        console.log('✅ Loaded settings from file:', settings);
+      } catch (e) {
+        console.error('❌ Error loading settings:', e.message);
+      }
+    }
+    
+    /* DISABLED - No longer loading chat/message history
     if (fs.existsSync(CHATS_FILE)) {
       const chatsData = JSON.parse(fs.readFileSync(CHATS_FILE, 'utf8'));
       Object.entries(chatsData).forEach(([userId, chat]) => {
@@ -80,23 +97,21 @@ function loadData() {
       const totalMessages = Array.from(messages.values()).reduce((sum, msgs) => sum + msgs.length, 0);
       console.log(`✅ Loaded ${totalMessages} messages from file`);
     }
-    
-    if (fs.existsSync(SETTINGS_FILE)) {
-      try {
-        const savedSettings = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
-        settings = { ...settings, ...savedSettings };
-        console.log('✅ Loaded settings from file:', settings);
-      } catch (e) {
-        console.error('❌ Error loading settings:', e.message);
-      }
-    }
+    */
   } catch (error) {
     console.error('❌ Error loading data:', error.message);
   }
 }
 
 // Save data to files
+// DISABLED: History saving disabled - only keep in memory for real-time display
 function saveData() {
+  // History saving is disabled - messages are only kept in memory
+  // This saves Railway storage and credit
+  console.log('ℹ️  History saving disabled - messages kept in memory only');
+  return;
+  
+  /* DISABLED - No longer saving history
   try {
     // Save chats as JSON
     const chatsObj = {};
@@ -198,6 +213,7 @@ function saveData() {
   } catch (error) {
     console.error('❌ Error saving data:', error.message);
   }
+  */
 }
 
 // Save settings
