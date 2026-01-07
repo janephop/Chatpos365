@@ -25,7 +25,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
@@ -68,7 +68,7 @@ function loadData() {
     // History loading is disabled - start with empty memory
     // This saves Railway storage and ensures no old data persists
     console.log('ℹ️  History loading disabled - starting fresh (no chat/message history)');
-    
+
     // Only load settings (not chat/message history)
     if (fs.existsSync(SETTINGS_FILE)) {
       try {
@@ -79,7 +79,7 @@ function loadData() {
         console.error('❌ Error loading settings:', e.message);
       }
     }
-    
+
     /* DISABLED - No longer loading chat/message history
     if (fs.existsSync(CHATS_FILE)) {
       const chatsData = JSON.parse(fs.readFileSync(CHATS_FILE, 'utf8'));
@@ -110,7 +110,7 @@ function saveData() {
   // This saves Railway storage and credit
   console.log('ℹ️  History saving disabled - messages kept in memory only');
   return;
-  
+
   /* DISABLED - No longer saving history
   try {
     // Save chats as JSON
@@ -246,7 +246,7 @@ if (fs.existsSync(backupFile)) {
   try {
     console.log('📦 Found backup file, attempting auto-restore...');
     const backupData = JSON.parse(fs.readFileSync(backupFile, 'utf8'));
-    
+
     // Restore chats
     if (backupData.chats && Array.isArray(backupData.chats)) {
       backupData.chats.forEach(chat => {
@@ -255,7 +255,7 @@ if (fs.existsSync(backupFile)) {
       });
       console.log(`✅ Restored ${backupData.chats.length} chats from backup`);
     }
-    
+
     // Restore messages
     if (backupData.messages && typeof backupData.messages === 'object') {
       Object.entries(backupData.messages).forEach(([userId, msgs]) => {
@@ -263,7 +263,7 @@ if (fs.existsSync(backupFile)) {
       });
       console.log(`✅ Restored messages from ${Object.keys(backupData.messages).length} users`);
     }
-    
+
     // Save to database and files
     if (db) {
       // Sync to database
@@ -271,7 +271,7 @@ if (fs.existsSync(backupFile)) {
     } else {
       saveData();
     }
-    
+
     console.log('✅ Auto-restore completed successfully');
   } catch (error) {
     console.error('❌ Auto-restore failed:', error.message);
@@ -311,7 +311,7 @@ app.options('/uploads/:filename', (req, res) => {
 app.head('/uploads/:filename', (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(UPLOADS_DIR, filename);
-  
+
   if (!fs.existsSync(filePath)) {
     return res.status(404).end();
   }
@@ -345,13 +345,13 @@ app.head('/uploads/:filename', (req, res) => {
 app.get('/uploads/:filename', (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(UPLOADS_DIR, filename);
-  
+
   // Check if file exists
   if (!fs.existsSync(filePath)) {
     console.error(`❌ File not found: ${filePath}`);
     console.error(`   Uploads directory: ${UPLOADS_DIR}`);
     console.error(`   Available files:`, fs.existsSync(UPLOADS_DIR) ? fs.readdirSync(UPLOADS_DIR).slice(0, 10) : 'Directory does not exist');
-    return res.status(404).json({ 
+    return res.status(404).json({
       error: 'File not found',
       filename: filename,
       path: filePath,
@@ -393,10 +393,10 @@ app.get('/uploads/:filename', (req, res) => {
     const start = parseInt(parts[0], 10);
     const end = parts[1] ? parseInt(parts[1], 10) : Math.min(start + 1024 * 1024, fileSize - 1); // 1MB chunks
     const chunksize = (end - start) + 1;
-    
+
     // Error handling for stream
     const file = fs.createReadStream(filePath, { start, end });
-    
+
     file.on('error', (err) => {
       console.error('Stream error:', err);
       if (!res.headersSent) {
@@ -416,7 +416,7 @@ app.get('/uploads/:filename', (req, res) => {
   } else {
     // No range request - send entire file
     const file = fs.createReadStream(filePath);
-    
+
     file.on('error', (err) => {
       console.error('Stream error:', err);
       if (!res.headersSent) {
@@ -439,7 +439,7 @@ app.get('/uploads/:filename', (req, res) => {
 app.get('/api/download/:filename', (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(UPLOADS_DIR, filename);
-  
+
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'File not found' });
   }
@@ -463,18 +463,18 @@ app.use('/webhook/line', (req, res, next) => {
   if (req.method === 'HEAD') {
     return next();
   }
-  
+
   // Check if configuration is set
   if (!config.channelAccessToken || !config.channelSecret) {
     console.error('❌ LINE configuration not set!');
-    return res.status(400).json({ 
-      error: 'LINE configuration not set. Please configure via the frontend first.' 
+    return res.status(400).json({
+      error: 'LINE configuration not set. Please configure via the frontend first.'
     });
   }
-  
+
   console.log('🔐 Verifying LINE signature...');
   console.log('Channel Secret (first 10 chars):', config.channelSecret.substring(0, 10) + '...');
-  
+
   // Apply LINE middleware with current config (it handles raw body internally)
   const lineMiddleware = middleware(config);
   lineMiddleware(req, res, (err) => {
@@ -521,11 +521,11 @@ app.get('/api/settings', (req, res) => {
 app.post('/api/settings', (req, res) => {
   try {
     const { customerPriceLevel } = req.body;
-    
+
     if (customerPriceLevel !== undefined) {
       settings.customerPriceLevel = parseInt(customerPriceLevel);
     }
-    
+
     saveSettings();
     res.json({ success: true, settings });
   } catch (error) {
@@ -539,7 +539,7 @@ app.get('/api/config/status', (req, res) => {
   const hasToken = !!config.channelAccessToken && config.channelAccessToken !== 'your_channel_access_token_here';
   const hasSecret = !!config.channelSecret && config.channelSecret !== 'your_channel_secret_here';
   const hasNgrok = !!config.ngrokUrl && config.ngrokUrl !== '';
-  
+
   res.json({
     configured: hasToken && hasSecret,
     hasToken,
@@ -553,7 +553,7 @@ app.get('/api/config/status', (req, res) => {
 app.post('/config', (req, res) => {
   try {
     const { channelAccessToken, channelSecret, ngrokUrl } = req.body;
-    
+
     if (channelAccessToken) {
       config.channelAccessToken = channelAccessToken;
     }
@@ -563,10 +563,10 @@ app.post('/config', (req, res) => {
     if (ngrokUrl !== undefined) {
       config.ngrokUrl = ngrokUrl;
     }
-    
+
     // Update config in memory
     updateConfig(config);
-    
+
     res.json({ success: true, message: 'Config updated successfully' });
   } catch (error) {
     console.error('Error updating config:', error);
@@ -578,16 +578,16 @@ app.post('/config', (req, res) => {
 app.get('/api/chats', (req, res) => {
   try {
     let chatList = [];
-    
+
     // Try to get from database first (for offline-first and cross-device access)
     if (db) {
       const dbChats = db.prepare('SELECT * FROM chats ORDER BY updated_at DESC').all();
-      
+
       chatList = dbChats.map(chat => {
         // Get message count and last message from database
         const messageCount = db.prepare('SELECT COUNT(*) as count FROM messages WHERE user_id = ?').get(chat.user_id).count;
         const lastMessage = db.prepare('SELECT text, time FROM messages WHERE user_id = ? ORDER BY timestamp DESC LIMIT 1').get(chat.user_id);
-        
+
         return {
           userId: chat.user_id,
           id: chat.user_id,
@@ -604,12 +604,12 @@ app.get('/api/chats', (req, res) => {
           lastMessage: lastMessage?.text || ''
         };
       });
-      
+
       if (chatList.length > 0) {
         return res.json(chatList);
       }
     }
-    
+
     // Fallback to memory (in-memory Map)
     chatList = Array.from(chats.values()).map(chat => ({
       ...chat,
@@ -618,11 +618,154 @@ app.get('/api/chats', (req, res) => {
       lastMessage: messages.get(chat.userId)?.[messages.get(chat.userId).length - 1]?.text || '',
       time: messages.get(chat.userId)?.[messages.get(chat.userId).length - 1]?.time || chat.time
     }));
-    
+
     res.json(chatList);
   } catch (error) {
     console.error('Error fetching chats:', error);
     res.status(500).json({ error: 'Failed to fetch chats' });
+  }
+});
+
+// API endpoint to refresh a chat's profile from LINE
+app.post('/api/chats/:userId/refresh-profile', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const client = new Client(config);
+
+    console.log(`🔄 Refreshing profile for user: ${userId}`);
+
+    // Get user profile from LINE
+    const userProfile = await client.getProfile(userId);
+
+    if (!userProfile || !userProfile.displayName) {
+      return res.status(404).json({
+        success: false,
+        error: 'Could not fetch profile from LINE'
+      });
+    }
+
+    console.log(`✅ Got profile from LINE: ${userProfile.displayName}`);
+
+    // Update in memory
+    if (chats.has(userId)) {
+      const chat = chats.get(userId);
+      chat.name = userProfile.displayName;
+      if (userProfile.pictureUrl) {
+        chat.avatar = userProfile.pictureUrl;
+      }
+      chats.set(userId, chat);
+    }
+
+    // Update in database if available
+    if (db) {
+      try {
+        db.prepare(`
+          UPDATE chats 
+          SET name = ?, avatar = ?, updated_at = strftime('%s', 'now')
+          WHERE user_id = ?
+        `).run(
+          userProfile.displayName,
+          userProfile.pictureUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile.displayName)}&background=06C755&color=fff`,
+          userId
+        );
+        console.log(`✅ Updated profile in database for ${userProfile.displayName}`);
+      } catch (dbError) {
+        console.error('Database update error:', dbError);
+      }
+    }
+
+    res.json({
+      success: true,
+      profile: {
+        userId: userId,
+        displayName: userProfile.displayName,
+        pictureUrl: userProfile.pictureUrl
+      }
+    });
+  } catch (error) {
+    console.error('Error refreshing profile:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to refresh profile from LINE'
+    });
+  }
+});
+
+// API endpoint to refresh all Unknown User chats
+app.post('/api/chats/refresh-unknown', async (req, res) => {
+  try {
+    const client = new Client(config);
+    const results = { updated: [], failed: [] };
+
+    // Find all Unknown User chats
+    let unknownChats = [];
+
+    if (db) {
+      unknownChats = db.prepare(`SELECT user_id FROM chats WHERE name = 'Unknown User'`).all();
+    } else {
+      chats.forEach((chat, userId) => {
+        if (chat.name === 'Unknown User') {
+          unknownChats.push({ user_id: userId });
+        }
+      });
+    }
+
+    console.log(`🔄 Found ${unknownChats.length} Unknown User chats to refresh`);
+
+    // Refresh each one
+    for (const chat of unknownChats) {
+      try {
+        const userProfile = await client.getProfile(chat.user_id);
+
+        if (userProfile && userProfile.displayName) {
+          // Update in memory
+          if (chats.has(chat.user_id)) {
+            const existingChat = chats.get(chat.user_id);
+            existingChat.name = userProfile.displayName;
+            if (userProfile.pictureUrl) {
+              existingChat.avatar = userProfile.pictureUrl;
+            }
+            chats.set(chat.user_id, existingChat);
+          }
+
+          // Update in database
+          if (db) {
+            db.prepare(`
+              UPDATE chats 
+              SET name = ?, avatar = ?, updated_at = strftime('%s', 'now')
+              WHERE user_id = ?
+            `).run(
+              userProfile.displayName,
+              userProfile.pictureUrl || '',
+              chat.user_id
+            );
+          }
+
+          results.updated.push({
+            userId: chat.user_id,
+            newName: userProfile.displayName
+          });
+          console.log(`✅ Updated ${chat.user_id} -> ${userProfile.displayName}`);
+        }
+      } catch (error) {
+        results.failed.push({
+          userId: chat.user_id,
+          error: error.message
+        });
+        console.error(`❌ Failed to refresh ${chat.user_id}:`, error.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      total: unknownChats.length,
+      updated: results.updated.length,
+      failed: results.failed.length,
+      results
+    });
+  } catch (error) {
+    console.error('Error refreshing unknown users:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -631,31 +774,31 @@ app.get('/api/chats/:userId/messages', (req, res) => {
   try {
     const { userId } = req.params;
     const { limit, offset, fromTimestamp } = req.query;
-    
+
     // Try to get from database first (for offline-first and cross-device access)
     if (db) {
       let query = 'SELECT * FROM messages WHERE user_id = ?';
       const params = [userId];
-      
+
       if (fromTimestamp) {
         query += ' AND timestamp >= ?';
         params.push(parseInt(fromTimestamp));
       }
-      
+
       query += ' ORDER BY timestamp ASC';
-      
+
       if (limit) {
         query += ' LIMIT ?';
         params.push(parseInt(limit));
       }
-      
+
       if (offset) {
         query += ' OFFSET ?';
         params.push(parseInt(offset));
       }
-      
+
       const dbMessages = db.prepare(query).all(...params);
-      
+
       // Convert database format to API format
       const formattedMessages = dbMessages.map(msg => ({
         id: msg.id,
@@ -674,15 +817,15 @@ app.get('/api/chats/:userId/messages', (req, res) => {
         latitude: msg.latitude,
         longitude: msg.longitude
       }));
-      
+
       if (formattedMessages.length > 0) {
         return res.json(formattedMessages);
       }
     }
-    
+
     // Fallback to memory (in-memory Map)
     const userMessages = messages.get(userId) || [];
-    
+
     // Apply pagination if requested
     let result = userMessages;
     if (fromTimestamp) {
@@ -694,7 +837,7 @@ app.get('/api/chats/:userId/messages', (req, res) => {
     if (limit) {
       result = result.slice(0, parseInt(limit));
     }
-    
+
     res.json(result);
   } catch (error) {
     console.error('Error fetching messages:', error);
@@ -714,7 +857,7 @@ function loadProductsFromSQL(productsSqlPath) {
   try {
     // Use provided path or try default paths
     let filePath = productsSqlPath;
-    
+
     if (!filePath) {
       // Try multiple default paths
       const defaultPaths = [
@@ -722,7 +865,7 @@ function loadProductsFromSQL(productsSqlPath) {
         path.join(__dirname, 'data', 'products.sql'),
         process.env.POS_DB_PATH
       ].filter(Boolean);
-      
+
       for (const p of defaultPaths) {
         if (p && fs.existsSync(p)) {
           filePath = p;
@@ -730,7 +873,7 @@ function loadProductsFromSQL(productsSqlPath) {
         }
       }
     }
-    
+
     // Check if file exists
     if (!filePath || !fs.existsSync(filePath)) {
       console.warn(`⚠️ Products SQL file not found`);
@@ -738,27 +881,27 @@ function loadProductsFromSQL(productsSqlPath) {
       console.warn('   Please set POS_DB_PATH environment variable or place products.sql in data/ folder.');
       return { products: [], lastModified: null };
     }
-    
+
     const productsSqlPath = filePath;
-    
+
     // Get file modification time
     const stats = fs.statSync(productsSqlPath);
     const lastModified = stats.mtime.getTime();
-    
+
     // Check if we need to reload (file changed or cache is empty)
     if (productsCache.data && productsCache.lastModified === lastModified && productsCache.filePath === productsSqlPath) {
       console.log('📦 Using cached products data');
       return { products: productsCache.data, lastModified };
     }
-    
+
     console.log('🔄 Loading products from SQL file (file changed or cache empty)...');
     const sqlContent = fs.readFileSync(productsSqlPath, 'utf8');
     const products = [];
-    
+
     // Parse SQL INSERT statements - iterate line by line for robustness
     // This handles complex product names with special characters better than regex
     const lines = sqlContent.split(/\r?\n/);
-    
+
     for (const line of lines) {
       // Skip lines that are not INSERT statements for products table
       if (!line.match(/^\s*INSERT\s+INTO\s+products/i)) continue;
@@ -776,10 +919,10 @@ function loadProductsFromSQL(productsSqlPath) {
         let current = '';
         let inQuotes = false;
         let quoteChar = null;
-        
+
         for (let i = 0; i < valuesStr.length; i++) {
           const char = valuesStr[i];
-          
+
           if (!inQuotes && (char === '"' || char === "'")) {
             inQuotes = true;
             quoteChar = char;
@@ -804,7 +947,7 @@ function loadProductsFromSQL(productsSqlPath) {
         if (current.trim()) {
           values.push(current.trim());
         }
-        
+
         // Clean up values
         const cleanedValues = values.map(v => {
           v = v.trim();
@@ -814,7 +957,7 @@ function loadProductsFromSQL(productsSqlPath) {
           if (v === 'NULL' || v === 'null') return null;
           return v;
         });
-        
+
         if (cleanedValues.length >= 14) {
           const product = {
             id: cleanedValues[0] || '',
@@ -833,14 +976,14 @@ function loadProductsFromSQL(productsSqlPath) {
             image: cleanedValues[13] || null,
             tax_rate: cleanedValues[14] && cleanedValues[14] !== 'NULL' ? parseFloat(cleanedValues[14]) : null
           };
-          
+
           // Fix image path if exists - point to backend API
           if (product.image && !product.image.startsWith('http') && !product.image.startsWith('data:')) {
             // Remove leading slash if exists, then add /api/products/images/ prefix
             const imagePath = product.image.startsWith('/') ? product.image.slice(1) : product.image;
             product.image = `http://localhost:3000/api/products/images/${imagePath}`;
           }
-          
+
           products.push(product);
         }
       } catch (err) {
@@ -848,14 +991,14 @@ function loadProductsFromSQL(productsSqlPath) {
         // Continue with next product
       }
     }
-    
+
     // Update cache
     productsCache = {
       data: products,
       lastModified: lastModified,
       filePath: productsSqlPath
     };
-    
+
     console.log(`✅ Loaded ${products.length} products from SQL file`);
     return { products, lastModified };
   } catch (error) {
@@ -878,11 +1021,11 @@ app.get('/api/products', (req, res) => {
       // From environment variable
       process.env.PRODUCTS_SQL_PATH
     ].filter(Boolean);
-    
+
     let products = [];
     let lastModified = null;
     let foundPath = null;
-    
+
     // Try each path
     for (const productsSqlPath of possiblePaths) {
       if (productsSqlPath && fs.existsSync(productsSqlPath)) {
@@ -896,7 +1039,7 @@ app.get('/api/products', (req, res) => {
         }
       }
     }
-    
+
     if (products.length > 0) {
       return res.json({
         success: true,
@@ -907,7 +1050,7 @@ app.get('/api/products', (req, res) => {
         path: foundPath
       });
     }
-    
+
     // If no file found, try to load from environment variable (JSON)
     if (process.env.POS_PRODUCTS_JSON) {
       try {
@@ -923,7 +1066,7 @@ app.get('/api/products', (req, res) => {
         console.error('Error parsing POS_PRODUCTS_JSON:', e);
       }
     }
-    
+
     // Return empty array with helpful message
     res.json({
       success: true,
@@ -951,19 +1094,19 @@ app.get('/api/products/images/*', (req, res) => {
     const imagePath = req.params[0]; // Get everything after /api/products/images/
     const posDbPath = path.join(__dirname, '..', '..', 'postest');
     const fullImagePath = path.join(posDbPath, 'public', imagePath);
-    
+
     // Security: prevent directory traversal
     const normalizedPath = path.normalize(fullImagePath);
     const publicPath = path.join(posDbPath, 'public');
     if (!normalizedPath.startsWith(publicPath)) {
       return res.status(403).json({ error: 'Access denied' });
     }
-    
+
     // Check if file exists
     if (!fs.existsSync(normalizedPath)) {
       return res.status(404).json({ error: 'Image not found' });
     }
-    
+
     // Send image file
     res.sendFile(normalizedPath);
   } catch (error) {
@@ -976,7 +1119,7 @@ app.get('/api/products/images/*', (req, res) => {
 app.post('/api/chats/:userId/messages', async (req, res) => {
   const { userId } = req.params;
   const { text } = req.body;
-  
+
   if (!text) {
     return res.status(400).json({ error: 'Message text is required' });
   }
@@ -1014,7 +1157,7 @@ app.post('/api/chats/:userId/messages', async (req, res) => {
 // API endpoint to upload and send file/image to LINE user
 // DISABLED: Text only mode to save Railway credit
 app.post('/api/chats/:userId/upload', upload.single('file'), async (req, res) => {
-  return res.status(403).json({ 
+  return res.status(403).json({
     error: 'File upload disabled',
     message: 'การอัปโหลดไฟล์ถูกปิดใช้งานเพื่อประหยัด credit กรุณาใช้เฉพาะข้อความเท่านั้น'
   });
@@ -1023,39 +1166,39 @@ app.post('/api/chats/:userId/upload', upload.single('file'), async (req, res) =>
 // API endpoint to update LINE configuration
 app.post('/api/config/update', (req, res) => {
   const { channelAccessToken, channelSecret, ngrokUrl } = req.body;
-  
+
   console.log('📥 Received config update:', {
     hasToken: !!channelAccessToken,
     hasSecret: !!channelSecret,
     ngrokUrl: ngrokUrl || '(empty)'
   });
-  
+
   if (!channelAccessToken || !channelSecret) {
-    return res.status(400).json({ 
-      success: false, 
-      error: 'Channel Access Token and Channel Secret are required' 
+    return res.status(400).json({
+      success: false,
+      error: 'Channel Access Token and Channel Secret are required'
     });
   }
-  
+
   // Update configuration
   updateConfig({ channelAccessToken, channelSecret, ngrokUrl: ngrokUrl || '' });
-  
+
   // Save to .env file
   const envPath = path.join(__dirname, '.env');
   const envContent = `LINE_CHANNEL_ACCESS_TOKEN=${channelAccessToken}\nLINE_CHANNEL_SECRET=${channelSecret}\nNGROK_URL=${ngrokUrl || ''}\nPORT=${PORT}\n`;
-  
+
   try {
     fs.writeFileSync(envPath, envContent);
     console.log('✅ Config saved - ngrok URL:', ngrokUrl || '(not set)');
-    res.json({ 
-      success: true, 
-      message: '✅ Configuration saved successfully!' 
+    res.json({
+      success: true,
+      message: '✅ Configuration saved successfully!'
     });
   } catch (error) {
     console.error('❌ Failed to save config:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to save configuration file' 
+    res.status(500).json({
+      success: false,
+      error: 'Failed to save configuration file'
     });
   }
 });
@@ -1093,7 +1236,7 @@ app.post('/webhook/line', async (req, res) => {
 
     // Process all events in the request body
     await Promise.all(req.body.events.map(handleEvent));
-    
+
     console.log('✅ All events processed successfully');
     // Send a 200 OK response to LINE
     res.status(200).json({ success: true });
@@ -1173,6 +1316,21 @@ async function handleEvent(event) {
         isPinned: false,
         tags: []
       });
+    } else {
+      // Update existing chat with new profile info if previously Unknown or if we got a valid profile
+      const existingChat = chats.get(userId);
+      if (userProfile.displayName !== 'Unknown User') {
+        // Update name if we got a valid display name (fixes Unknown User issue)
+        if (existingChat.name === 'Unknown User' || existingChat.name !== userProfile.displayName) {
+          existingChat.name = userProfile.displayName;
+          console.log(`✅ Updated chat name from "Unknown User" to "${userProfile.displayName}"`);
+        }
+        // Update avatar if we got a valid profile picture
+        if (userProfile.pictureUrl && existingChat.avatar !== userProfile.pictureUrl) {
+          existingChat.avatar = userProfile.pictureUrl;
+        }
+        chats.set(userId, existingChat);
+      }
     }
 
     // Initialize messages array
@@ -1378,7 +1536,7 @@ app.delete('/api/bills/:id', (req, res) => {
     const { id } = req.params;
     const filteredBills = bills.filter(b => b.id !== id);
     saveDataFile(BILLS_FILE, filteredBills);
-    
+
     // Also delete from database if available
     if (db) {
       try {
@@ -1387,7 +1545,7 @@ app.delete('/api/bills/:id', (req, res) => {
         console.error('Database delete error:', dbError);
       }
     }
-    
+
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete bill' });
@@ -1398,22 +1556,22 @@ app.delete('/api/bills/:id', (req, res) => {
 app.post('/api/bills/sync', (req, res) => {
   try {
     const { bills: importedBills } = req.body;
-    
+
     if (!importedBills || !Array.isArray(importedBills)) {
       return res.status(400).json({ error: 'Invalid bills data' });
     }
-    
+
     // Load existing bills
     const existingBills = loadDataFile(BILLS_FILE, []);
-    
+
     // Merge bills (update existing, add new)
     const billsMap = new Map();
-    
+
     // Add existing bills to map
     existingBills.forEach(bill => {
       billsMap.set(bill.id, bill);
     });
-    
+
     // Merge imported bills
     importedBills.forEach(bill => {
       if (bill.id) {
@@ -1435,13 +1593,13 @@ app.post('/api/bills/sync', (req, res) => {
         }
       }
     });
-    
+
     // Convert map back to array
     const mergedBills = Array.from(billsMap.values());
-    
+
     // Save to file
     saveDataFile(BILLS_FILE, mergedBills);
-    
+
     // Sync to database if available
     if (db) {
       try {
@@ -1452,7 +1610,7 @@ app.post('/api/bills/sync', (req, res) => {
            bank_account_id, shipping_company_id, tracking_number, notes, updated_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%s', 'now'))
         `);
-        
+
         const insertMany = db.transaction((bills) => {
           bills.forEach(bill => {
             stmt.run(
@@ -1474,16 +1632,16 @@ app.post('/api/bills/sync', (req, res) => {
             );
           });
         });
-        
+
         insertMany(mergedBills);
         console.log('✅ Synced bills to database');
       } catch (dbError) {
         console.error('Database sync error:', dbError);
       }
     }
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: 'Bills synced successfully',
       count: mergedBills.length,
       imported: importedBills.length,
@@ -1631,15 +1789,15 @@ app.get('/api/backup/github', async (req, res) => {
     chats.forEach((chat, userId) => {
       chatsData[userId] = chat;
     });
-    
+
     const messagesData = {};
     messages.forEach((msgs, userId) => {
       messagesData[userId] = msgs;
     });
-    
+
     // Save to JSON files first
     saveData();
-    
+
     // Return data for manual GitHub commit
     // Save backup to file for auto-restore
     const backupData = {
@@ -1647,10 +1805,10 @@ app.get('/api/backup/github', async (req, res) => {
       messages: messagesData,
       timestamp: Date.now()
     };
-    
+
     const backupFile = path.join(DATA_DIR, 'backup_data.json');
     fs.writeFileSync(backupFile, JSON.stringify(backupData, null, 2), 'utf8');
-    
+
     res.json({
       success: true,
       message: 'Data ready for GitHub backup',
@@ -1679,31 +1837,31 @@ app.post('/api/backup/github', async (req, res) => {
 app.get('/api/chats/history/all', (req, res) => {
   try {
     const { limit, offset, fromTimestamp } = req.query;
-    
+
     if (db) {
       // Get from database
       let query = 'SELECT * FROM messages';
       const params = [];
-      
+
       if (fromTimestamp) {
         query += ' WHERE timestamp >= ?';
         params.push(parseInt(fromTimestamp));
       }
-      
+
       query += ' ORDER BY timestamp ASC';
-      
+
       if (limit) {
         query += ' LIMIT ?';
         params.push(parseInt(limit));
       }
-      
+
       if (offset) {
         query += ' OFFSET ?';
         params.push(parseInt(offset));
       }
-      
+
       const dbMessages = db.prepare(query).all(...params);
-      
+
       // Group by user_id
       const messagesByUser = {};
       dbMessages.forEach(msg => {
@@ -1728,10 +1886,10 @@ app.get('/api/chats/history/all', (req, res) => {
           longitude: msg.longitude
         });
       });
-      
+
       return res.json(messagesByUser);
     }
-    
+
     // Fallback to memory
     const messagesObj = {};
     messages.forEach((msgs, userId) => {
@@ -1747,7 +1905,7 @@ app.get('/api/chats/history/all', (req, res) => {
       }
       messagesObj[userId] = filteredMsgs;
     });
-    
+
     res.json(messagesObj);
   } catch (error) {
     console.error('Error fetching all chat history:', error);
@@ -1763,7 +1921,7 @@ app.get('/api/chats/sync/all', (req, res) => {
       messages: {},
       timestamp: Date.now()
     };
-    
+
     if (db) {
       // Get all chats from database
       const dbChats = db.prepare('SELECT * FROM chats ORDER BY updated_at DESC').all();
@@ -1779,7 +1937,7 @@ app.get('/api/chats/sync/all', (req, res) => {
         isPinned: chat.is_pinned === 1,
         tags: chat.tags ? JSON.parse(chat.tags) : []
       }));
-      
+
       // Get all messages grouped by user_id
       const dbMessages = db.prepare('SELECT * FROM messages ORDER BY timestamp ASC').all();
       dbMessages.forEach(msg => {
@@ -1811,7 +1969,7 @@ app.get('/api/chats/sync/all', (req, res) => {
         result.messages[userId] = msgs;
       });
     }
-    
+
     res.json(result);
   } catch (error) {
     console.error('Error syncing all chats:', error);
@@ -1823,11 +1981,11 @@ app.get('/api/chats/sync/all', (req, res) => {
 app.post('/api/chats/sync/import', (req, res) => {
   try {
     const { chats: importedChats, messages: importedMessages } = req.body;
-    
+
     if (!importedChats && !importedMessages) {
       return res.status(400).json({ error: 'No data to import' });
     }
-    
+
     // Import chats
     if (importedChats && Array.isArray(importedChats)) {
       if (db) {
@@ -1836,7 +1994,7 @@ app.post('/api/chats/sync/import', (req, res) => {
           (user_id, name, avatar, platform, online, time, unread, is_pinned, tags, updated_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%s', 'now'))
         `);
-        
+
         const insertMany = db.transaction((chats) => {
           chats.forEach(chat => {
             stmt.run(
@@ -1852,17 +2010,17 @@ app.post('/api/chats/sync/import', (req, res) => {
             );
           });
         });
-        
+
         insertMany(importedChats);
       }
-      
+
       // Also update memory
       importedChats.forEach(chat => {
         const userId = chat.userId || chat.id;
         chats.set(userId, chat);
       });
     }
-    
+
     // Import messages
     if (importedMessages && typeof importedMessages === 'object') {
       if (db) {
@@ -1872,7 +2030,7 @@ app.post('/api/chats/sync/import', (req, res) => {
            audio_url, file_url, file_name, sticker_id, package_id, latitude, longitude)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
-        
+
         const insertMany = db.transaction((messagesObj) => {
           for (const [userId, msgs] of Object.entries(messagesObj)) {
             msgs.forEach((msg, index) => {
@@ -1898,21 +2056,21 @@ app.post('/api/chats/sync/import', (req, res) => {
             });
           }
         });
-        
+
         insertMany(importedMessages);
       }
-      
+
       // Also update memory
       Object.entries(importedMessages).forEach(([userId, msgs]) => {
         messages.set(userId, msgs);
       });
     }
-    
+
     // Save to JSON files
     saveData();
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: 'Chat history imported successfully',
       imported: {
         chats: importedChats?.length || 0,
@@ -1937,24 +2095,24 @@ app.get('/api/chats/stats', (req, res) => {
       oldestMessage: null,
       newestMessage: null
     };
-    
+
     if (db) {
       stats.totalChats = db.prepare('SELECT COUNT(*) as count FROM chats').get().count;
       stats.totalMessages = db.prepare('SELECT COUNT(*) as count FROM messages').get().count;
       stats.totalUnread = db.prepare('SELECT SUM(unread) as total FROM chats').get().total || 0;
-      
+
       // Chats by platform
       const platformStats = db.prepare('SELECT platform, COUNT(*) as count FROM chats GROUP BY platform').all();
       platformStats.forEach(row => {
         stats.chatsByPlatform[row.platform] = row.count;
       });
-      
+
       // Messages by type
       const typeStats = db.prepare('SELECT type, COUNT(*) as count FROM messages GROUP BY type').all();
       typeStats.forEach(row => {
         stats.messagesByType[row.type] = row.count;
       });
-      
+
       // Oldest and newest message
       const oldest = db.prepare('SELECT MIN(timestamp) as timestamp FROM messages').get();
       const newest = db.prepare('SELECT MAX(timestamp) as timestamp FROM messages').get();
@@ -1965,13 +2123,13 @@ app.get('/api/chats/stats', (req, res) => {
       stats.totalChats = chats.size;
       let totalMsgs = 0;
       let totalUnread = 0;
-      
+
       chats.forEach(chat => {
         totalUnread += chat.unread || 0;
         const platform = chat.platform || 'line';
         stats.chatsByPlatform[platform] = (stats.chatsByPlatform[platform] || 0) + 1;
       });
-      
+
       messages.forEach(msgs => {
         totalMsgs += msgs.length;
         msgs.forEach(msg => {
@@ -1979,11 +2137,11 @@ app.get('/api/chats/stats', (req, res) => {
           stats.messagesByType[type] = (stats.messagesByType[type] || 0) + 1;
         });
       });
-      
+
       stats.totalMessages = totalMsgs;
       stats.totalUnread = totalUnread;
     }
-    
+
     res.json(stats);
   } catch (error) {
     console.error('Error getting chat stats:', error);
@@ -2002,7 +2160,7 @@ app.get('/api/export/database', (req, res) => {
     if (!fs.existsSync(dbPath)) {
       return res.status(404).json({ error: 'Database file not found' });
     }
-    
+
     res.setHeader('Content-Type', 'application/octet-stream');
     res.setHeader('Content-Disposition', `attachment; filename="pos_chat_${Date.now()}.db"`);
     res.sendFile(dbPath);
@@ -2015,7 +2173,7 @@ app.get('/api/export/database', (req, res) => {
 app.get('/api/export/excel', (req, res) => {
   try {
     const workbook = XLSX.utils.book_new();
-    
+
     // Export Chats
     if (db) {
       const chats = db.prepare('SELECT * FROM chats').all();
@@ -2037,7 +2195,7 @@ app.get('/api/export/excel', (req, res) => {
         }
       }
     }
-    
+
     // Export Messages
     if (db) {
       const messages = db.prepare('SELECT * FROM messages ORDER BY timestamp DESC').all();
@@ -2063,7 +2221,7 @@ app.get('/api/export/excel', (req, res) => {
         }
       }
     }
-    
+
     // Export Bills
     if (db) {
       const bills = db.prepare('SELECT * FROM online_bills ORDER BY created_at DESC').all();
@@ -2085,7 +2243,7 @@ app.get('/api/export/excel', (req, res) => {
         }
       }
     }
-    
+
     // Export Bank Accounts
     if (db) {
       const bankAccounts = db.prepare('SELECT * FROM bank_accounts').all();
@@ -2102,7 +2260,7 @@ app.get('/api/export/excel', (req, res) => {
         }
       }
     }
-    
+
     // Export Shipping Companies
     if (db) {
       const shippingCompanies = db.prepare('SELECT * FROM shipping_companies').all();
@@ -2119,7 +2277,7 @@ app.get('/api/export/excel', (req, res) => {
         }
       }
     }
-    
+
     // Export Settings
     if (db) {
       const settings = db.prepare('SELECT * FROM settings').all();
@@ -2140,10 +2298,10 @@ app.get('/api/export/excel', (req, res) => {
         }
       }
     }
-    
+
     // Generate Excel buffer
     const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-    
+
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="pos_chat_export_${Date.now()}.xlsx"`);
     res.send(excelBuffer);
@@ -2158,12 +2316,12 @@ app.get('/api/export/json', (req, res) => {
   try {
     const archiver = require('archiver');
     const archive = archiver('zip', { zlib: { level: 9 } });
-    
+
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="pos_chat_data_${Date.now()}.zip"`);
-    
+
     archive.pipe(res);
-    
+
     // Add all JSON files
     const jsonFiles = [
       'chats.json',
@@ -2174,20 +2332,20 @@ app.get('/api/export/json', (req, res) => {
       'bank_accounts.json',
       'shipping_companies.json'
     ];
-    
+
     jsonFiles.forEach(file => {
       const filePath = path.join(DATA_DIR, file);
       if (fs.existsSync(filePath)) {
         archive.file(filePath, { name: file });
       }
     });
-    
+
     // Add database file if exists
     const dbPath = getDatabasePath();
     if (fs.existsSync(dbPath)) {
       archive.file(dbPath, { name: 'pos_chat.db' });
     }
-    
+
     archive.finalize();
   } catch (error) {
     console.error('Export JSON error:', error);
@@ -2200,18 +2358,18 @@ app.get('/api/backup/all', (req, res) => {
   try {
     const archiver = require('archiver');
     const archive = archiver('zip', { zlib: { level: 9 } });
-    
+
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="pos_chat_backup_${Date.now()}.zip"`);
-    
+
     archive.pipe(res);
-    
+
     // Add database
     const dbPath = getDatabasePath();
     if (fs.existsSync(dbPath)) {
       archive.file(dbPath, { name: 'database/pos_chat.db' });
     }
-    
+
     // Add all JSON files
     const jsonFiles = [
       'chats.json',
@@ -2222,14 +2380,14 @@ app.get('/api/backup/all', (req, res) => {
       'bank_accounts.json',
       'shipping_companies.json'
     ];
-    
+
     jsonFiles.forEach(file => {
       const filePath = path.join(DATA_DIR, file);
       if (fs.existsSync(filePath)) {
         archive.file(filePath, { name: `data/${file}` });
       }
     });
-    
+
     // Add uploads directory
     if (fs.existsSync(UPLOADS_DIR)) {
       const uploadFiles = fs.readdirSync(UPLOADS_DIR);
@@ -2240,7 +2398,7 @@ app.get('/api/backup/all', (req, res) => {
         }
       });
     }
-    
+
     archive.finalize();
   } catch (error) {
     console.error('Backup error:', error);
@@ -2252,8 +2410,8 @@ app.get('/api/backup/all', (req, res) => {
 app.get('/api/database/info', (req, res) => {
   try {
     if (!db) {
-      return res.json({ 
-        available: false, 
+      return res.json({
+        available: false,
         message: 'Database not initialized',
         jsonFiles: {
           chats: fs.existsSync(CHATS_FILE),
@@ -2266,7 +2424,7 @@ app.get('/api/database/info', (req, res) => {
         }
       });
     }
-    
+
     const stats = {
       chats: db.prepare('SELECT COUNT(*) as count FROM chats').get().count,
       messages: db.prepare('SELECT COUNT(*) as count FROM messages').get().count,
@@ -2274,10 +2432,10 @@ app.get('/api/database/info', (req, res) => {
       bankAccounts: db.prepare('SELECT COUNT(*) as count FROM bank_accounts').get().count,
       shippingCompanies: db.prepare('SELECT COUNT(*) as count FROM shipping_companies').get().count
     };
-    
+
     const dbPath = getDatabasePath();
     const dbStats = fs.existsSync(dbPath) ? fs.statSync(dbPath) : null;
-    
+
     res.json({
       available: true,
       path: dbPath,
@@ -2303,7 +2461,7 @@ app.post('/api/restore/auto', async (req, res) => {
   try {
     // Check if backup file exists in data directory
     const backupFile = path.join(DATA_DIR, 'backup_data.json');
-    
+
     if (!fs.existsSync(backupFile)) {
       return res.json({
         success: false,
@@ -2311,10 +2469,10 @@ app.post('/api/restore/auto', async (req, res) => {
         backupFile: backupFile
       });
     }
-    
+
     // Load backup data
     const backupData = JSON.parse(fs.readFileSync(backupFile, 'utf8'));
-    
+
     // Import chats
     if (backupData.chats && Array.isArray(backupData.chats)) {
       if (db) {
@@ -2323,7 +2481,7 @@ app.post('/api/restore/auto', async (req, res) => {
           (user_id, name, avatar, platform, online, time, unread, is_pinned, tags, updated_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, strftime('%s', 'now'))
         `);
-        
+
         const insertMany = db.transaction((chats) => {
           chats.forEach(chat => {
             stmt.run(
@@ -2339,17 +2497,17 @@ app.post('/api/restore/auto', async (req, res) => {
             );
           });
         });
-        
+
         insertMany(backupData.chats);
       }
-      
+
       // Update memory
       backupData.chats.forEach(chat => {
         const userId = chat.userId || chat.id;
         chats.set(userId, chat);
       });
     }
-    
+
     // Import messages
     if (backupData.messages && typeof backupData.messages === 'object') {
       if (db) {
@@ -2359,7 +2517,7 @@ app.post('/api/restore/auto', async (req, res) => {
            audio_url, file_url, file_name, sticker_id, package_id, latitude, longitude)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
-        
+
         const insertMany = db.transaction((messagesObj) => {
           for (const [userId, msgs] of Object.entries(messagesObj)) {
             msgs.forEach((msg, index) => {
@@ -2385,19 +2543,19 @@ app.post('/api/restore/auto', async (req, res) => {
             });
           }
         });
-        
+
         insertMany(backupData.messages);
       }
-      
+
       // Update memory
       Object.entries(backupData.messages).forEach(([userId, msgs]) => {
         messages.set(userId, msgs);
       });
     }
-    
+
     // Save to JSON files
     saveData();
-    
+
     res.json({
       success: true,
       message: 'Data restored successfully',
@@ -2436,10 +2594,10 @@ app.listen(PORT, () => {
   console.log(`2. 🌐 Copy the ngrok URL (e.g., https://xxxx.ngrok.io)`);
   console.log(`3. ⚙️  Configure in frontend Settings > LINE Official Account`);
   console.log(`4. 📝 Paste ngrok URL + /webhook/line into LINE Developers Console\n`);
-  
+
   // Check if config is set
-  if (!config.channelAccessToken || !config.channelSecret || 
-      config.channelAccessToken === 'your_channel_access_token_here') {
+  if (!config.channelAccessToken || !config.channelSecret ||
+    config.channelAccessToken === 'your_channel_access_token_here') {
     console.log(`⚠️  Configuration not found. Please set up LINE credentials via frontend.\n`);
   } else {
     console.log(`✅ LINE credentials loaded from .env file\n`);

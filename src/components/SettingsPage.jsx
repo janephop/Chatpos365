@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { 
+import {
   Settings,
   User,
   Globe,
@@ -22,7 +22,7 @@ const getLogoUrl = (platform) => {
     case 'lazada': return 'https://logo.clearbit.com/lazada.co.th';
     case 'tiktok': return 'https://logo.clearbit.com/tiktok.com';
     case 'facebook': return 'https://logo.clearbit.com/facebook.com';
-    case 'line': return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjMDZDNzU1Ii8+CjxwYXRoIGQ9Ik0xMiA2TDEyLjU0IDkuNzNMMTYgMTBMMTIuNTQgMTAuMjdMMTIgMTRMMTEuNDYgMTAuMjdMOCAxMEwxMS40NiA5LjczTDEyIDZaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K'; // LINE@ logo (green with @ symbol)
+    case 'line': return 'https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg'; // LINE Official Account logo
     case 'instagram': return 'https://logo.clearbit.com/instagram.com';
     default: return null;
   }
@@ -41,8 +41,8 @@ const SettingsPage = ({ shops, onBack, onSimulateWebhook }) => {
     return (
       <div className="h-full bg-[#F5F5F7]">
         <div className="max-w-5xl mx-auto">
-          <button 
-            onClick={() => setEditingShop(null)} 
+          <button
+            onClick={() => setEditingShop(null)}
             className="inline-flex items-center gap-2 px-4 py-2 mb-4 text-gray-600 hover:text-[#1D1D1F] transition"
           >
             <ArrowLeft size={20} />
@@ -71,11 +71,10 @@ const SettingsPage = ({ shops, onBack, onSimulateWebhook }) => {
             <button
               key={item.id}
               onClick={() => { setSelectedMenu(item.id); setEditingShop(null); }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                selectedMenu === item.id
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${selectedMenu === item.id
                   ? 'bg-[#F5F5F7] text-[#1D1D1F]'
                   : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-              }`}
+                }`}
             >
               <item.icon size={18} className={selectedMenu === item.id ? 'text-[#007AFF]' : 'text-gray-400'} />
               {item.label}
@@ -95,9 +94,9 @@ const SettingsPage = ({ shops, onBack, onSimulateWebhook }) => {
 
             <div className="grid gap-4">
               {shops.filter(s => s.type !== 'all').map(shop => (
-                <div 
-                  key={shop.id} 
-                  className="bg-white p-5 rounded-2xl border-2 border-gray-100 shadow-sm flex items-center justify-between group hover:border-[#06C755] hover:shadow-lg transition-all cursor-pointer" 
+                <div
+                  key={shop.id}
+                  className="bg-white p-5 rounded-2xl border-2 border-gray-100 shadow-sm flex items-center justify-between group hover:border-[#06C755] hover:shadow-lg transition-all cursor-pointer"
                   onClick={() => handleEditShop(shop)}
                 >
                   <div className="flex items-center gap-4">
@@ -105,9 +104,9 @@ const SettingsPage = ({ shops, onBack, onSimulateWebhook }) => {
                       <img
                         src={getLogoUrl(shop.type)}
                         className="w-full h-full object-contain"
-                        onError={(e) => { 
-                          e.target.style.display = 'none'; 
-                          e.target.parentElement.innerHTML = shop.name[0]; 
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.innerHTML = shop.name[0];
                         }}
                       />
                     </div>
@@ -165,12 +164,12 @@ const ShopSettings = () => {
         setNavCategoriesCount(shopData.nav_categories_count || 5);
         setBillModalSize(shopData.bill_modal_size || 'medium');
         setBillFontSize(shopData.bill_font_size || 'small');
-        
+
         // Load customer price level from settings API
         const getApiUrl = () => {
-           const hostname = window.location.hostname;
-           if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:3000';
-           return 'https://e45c90bd13d0.ngrok-free.app';
+          const hostname = window.location.hostname;
+          if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:3000';
+          return 'https://e45c90bd13d0.ngrok-free.app';
         };
         const API_URL = getApiUrl();
         const response = await fetch(`${API_URL}/api/settings`);
@@ -190,7 +189,7 @@ const ShopSettings = () => {
       alert('⚠️ กรุณากรอกชื่อร้าน');
       return;
     }
-    
+
     setLoading(true);
     try {
       // Save shop data to API
@@ -202,21 +201,21 @@ const ShopSettings = () => {
         bill_modal_size: billModalSize,
         bill_font_size: billFontSize,
       });
-      
+
       // Save backend settings
       const getApiUrl = () => {
-           const hostname = window.location.hostname;
-           if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:3000';
-           return 'https://e45c90bd13d0.ngrok-free.app';
+        const hostname = window.location.hostname;
+        if (hostname === 'localhost' || hostname === '127.0.0.1') return 'http://localhost:3000';
+        return 'https://e45c90bd13d0.ngrok-free.app';
       };
       const API_URL = getApiUrl();
-      
+
       await fetch(`${API_URL}/api/settings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ customerPriceLevel })
       });
-      
+
       // Show success toast
       const toast = document.createElement('div');
       toast.style.cssText = `
@@ -242,7 +241,7 @@ const ShopSettings = () => {
         </svg>
         <span>✅ บันทึกการตั้งค่าแล้ว</span>
       `;
-      
+
       // Add animation styles if not exists
       if (!document.getElementById('toast-animations')) {
         const style = document.createElement('style');
@@ -259,7 +258,7 @@ const ShopSettings = () => {
         `;
         document.head.appendChild(style);
       }
-      
+
       document.body.appendChild(toast);
       setTimeout(() => {
         toast.style.animation = 'slideOut 0.3s ease-out';
@@ -361,7 +360,7 @@ const ShopSettings = () => {
                 เลือกราคาที่จะแสดงในหน้าเว็บสำหรับลูกค้า (Shop)
               </p>
             </div>
-            
+
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 ขนาดการ์ดสินค้า
@@ -369,11 +368,10 @@ const ShopSettings = () => {
               <div className="grid grid-cols-3 gap-3">
                 <button
                   onClick={() => setProductCardSize('small')}
-                  className={`p-4 border-2 rounded-xl transition ${
-                    productCardSize === 'small'
+                  className={`p-4 border-2 rounded-xl transition ${productCardSize === 'small'
                       ? 'border-[#007AFF] bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   <div className="text-center">
                     <div className="text-xs font-medium mb-2">เล็ก</div>
@@ -382,11 +380,10 @@ const ShopSettings = () => {
                 </button>
                 <button
                   onClick={() => setProductCardSize('medium')}
-                  className={`p-4 border-2 rounded-xl transition ${
-                    productCardSize === 'medium'
+                  className={`p-4 border-2 rounded-xl transition ${productCardSize === 'medium'
                       ? 'border-[#007AFF] bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   <div className="text-center">
                     <div className="text-xs font-medium mb-2">กลาง</div>
@@ -395,11 +392,10 @@ const ShopSettings = () => {
                 </button>
                 <button
                   onClick={() => setProductCardSize('large')}
-                  className={`p-4 border-2 rounded-xl transition ${
-                    productCardSize === 'large'
+                  className={`p-4 border-2 rounded-xl transition ${productCardSize === 'large'
                       ? 'border-[#007AFF] bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   <div className="text-center">
                     <div className="text-xs font-medium mb-2">ใหญ่</div>
@@ -411,7 +407,7 @@ const ShopSettings = () => {
                 เลือกขนาดการ์ดสินค้าที่จะแสดงในหน้า Shop
               </p>
             </div>
-            
+
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 จำนวนหมวดหมู่ใน Navigation
@@ -428,7 +424,7 @@ const ShopSettings = () => {
                 จำนวนหมวดหมู่ที่จะแสดงในเมนู Navigation ด้านบน (1-20)
               </p>
             </div>
-            
+
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 ขนาดหน้าต่างดูบิล
@@ -436,11 +432,10 @@ const ShopSettings = () => {
               <div className="grid grid-cols-3 gap-3">
                 <button
                   onClick={() => setBillModalSize('small')}
-                  className={`p-4 border-2 rounded-xl transition ${
-                    billModalSize === 'small'
+                  className={`p-4 border-2 rounded-xl transition ${billModalSize === 'small'
                       ? 'border-[#007AFF] bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   <div className="text-center">
                     <div className="text-xs font-medium mb-2">เล็ก</div>
@@ -449,11 +444,10 @@ const ShopSettings = () => {
                 </button>
                 <button
                   onClick={() => setBillModalSize('medium')}
-                  className={`p-4 border-2 rounded-xl transition ${
-                    billModalSize === 'medium'
+                  className={`p-4 border-2 rounded-xl transition ${billModalSize === 'medium'
                       ? 'border-[#007AFF] bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   <div className="text-center">
                     <div className="text-xs font-medium mb-2">กลาง</div>
@@ -462,11 +456,10 @@ const ShopSettings = () => {
                 </button>
                 <button
                   onClick={() => setBillModalSize('large')}
-                  className={`p-4 border-2 rounded-xl transition ${
-                    billModalSize === 'large'
+                  className={`p-4 border-2 rounded-xl transition ${billModalSize === 'large'
                       ? 'border-[#007AFF] bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   <div className="text-center">
                     <div className="text-xs font-medium mb-2">ใหญ่</div>
@@ -478,7 +471,7 @@ const ShopSettings = () => {
                 เลือกขนาดหน้าต่างดูบิล
               </p>
             </div>
-            
+
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 ขนาดตัวอักษรในบิล
@@ -486,11 +479,10 @@ const ShopSettings = () => {
               <div className="grid grid-cols-3 gap-3">
                 <button
                   onClick={() => setBillFontSize('small')}
-                  className={`p-4 border-2 rounded-xl transition ${
-                    billFontSize === 'small'
+                  className={`p-4 border-2 rounded-xl transition ${billFontSize === 'small'
                       ? 'border-[#007AFF] bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   <div className="text-center">
                     <div className="text-xs font-medium mb-2">เล็ก</div>
@@ -499,11 +491,10 @@ const ShopSettings = () => {
                 </button>
                 <button
                   onClick={() => setBillFontSize('medium')}
-                  className={`p-4 border-2 rounded-xl transition ${
-                    billFontSize === 'medium'
+                  className={`p-4 border-2 rounded-xl transition ${billFontSize === 'medium'
                       ? 'border-[#007AFF] bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   <div className="text-center">
                     <div className="text-xs font-medium mb-2">กลาง</div>
@@ -512,11 +503,10 @@ const ShopSettings = () => {
                 </button>
                 <button
                   onClick={() => setBillFontSize('large')}
-                  className={`p-4 border-2 rounded-xl transition ${
-                    billFontSize === 'large'
+                  className={`p-4 border-2 rounded-xl transition ${billFontSize === 'large'
                       ? 'border-[#007AFF] bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                    }`}
                 >
                   <div className="text-center">
                     <div className="text-xs font-medium mb-2">ใหญ่</div>
@@ -558,7 +548,7 @@ const ShopSettings = () => {
 // Bank Settings Component
 const BankSettings = () => {
   const [bankAccounts, setBankAccounts] = useState([]);
-  
+
   // Load bank accounts on mount
   React.useEffect(() => {
     const loadBankAccounts = async () => {
@@ -604,7 +594,7 @@ const BankSettings = () => {
     }
 
     const accountToSave = { ...formData, id: editingBank?.id || Date.now().toString() };
-    
+
     try {
       await bankAccountsAPI.save(accountToSave);
       const updatedAccounts = await bankAccountsAPI.getAll();
@@ -638,7 +628,7 @@ const BankSettings = () => {
         </svg>
         <span>✅ ${editingBank ? 'อัพเดต' : 'เพิ่ม'}ข้อมูลธนาคารแล้ว</span>
       `;
-      
+
       // Add animation styles if not exists
       if (!document.getElementById('toast-animations')) {
         const style = document.createElement('style');
@@ -655,7 +645,7 @@ const BankSettings = () => {
         `;
         document.head.appendChild(style);
       }
-      
+
       document.body.appendChild(toast);
       setTimeout(() => {
         toast.style.animation = 'slideOut 0.3s ease-out';
@@ -677,10 +667,10 @@ const BankSettings = () => {
         await bankAccountsAPI.delete(id);
         const updatedAccounts = await bankAccountsAPI.getAll();
         setBankAccounts(updatedAccounts);
-        
+
         // Show success toast
-      const toast = document.createElement('div');
-      toast.style.cssText = `
+        const toast = document.createElement('div');
+        toast.style.cssText = `
         position: fixed;
         top: 20px;
         right: 20px;
@@ -697,21 +687,21 @@ const BankSettings = () => {
         gap: 12px;
         animation: slideIn 0.3s ease-out;
       `;
-      toast.innerHTML = `
+        toast.innerHTML = `
         <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
         </svg>
         <span>✅ ลบข้อมูลธนาคารแล้ว</span>
       `;
-      document.body.appendChild(toast);
-      setTimeout(() => {
-        toast.style.animation = 'slideOut 0.3s ease-out';
+        document.body.appendChild(toast);
         setTimeout(() => {
-          if (document.body.contains(toast)) {
-            document.body.removeChild(toast);
-          }
-        }, 300);
-      }, 2000);
+          toast.style.animation = 'slideOut 0.3s ease-out';
+          setTimeout(() => {
+            if (document.body.contains(toast)) {
+              document.body.removeChild(toast);
+            }
+          }, 300);
+        }, 2000);
       } catch (error) {
         console.error('Error deleting bank account:', error);
         alert('❌ เกิดข้อผิดพลาดในการลบข้อมูลธนาคาร');
@@ -772,11 +762,10 @@ const BankSettings = () => {
                       const selectedBank = banks.find(b => b.id === bankOption.id);
                       setFormData({ ...formData, bank: bankOption.id, name: selectedBank?.name || '' });
                     }}
-                    className={`p-3 rounded-xl border-2 transition-all ${
-                      formData.bank === bankOption.id
+                    className={`p-3 rounded-xl border-2 transition-all ${formData.bank === bankOption.id
                         ? 'border-[#007AFF] bg-blue-50 shadow-md'
                         : 'border-gray-200 hover:border-gray-300 bg-white'
-                    }`}
+                      }`}
                   >
                     <div className={`w-10 h-10 ${bankOption.color} rounded-lg flex items-center justify-center text-white font-bold text-xs mx-auto mb-2`}>
                       {bankOption.shortName}

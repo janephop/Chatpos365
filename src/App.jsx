@@ -117,7 +117,7 @@ const getLogoUrl = (platform) => {
     case 'lazada': return 'https://logo.clearbit.com/lazada.co.th';
     case 'tiktok': return 'https://logo.clearbit.com/tiktok.com';
     case 'facebook': return 'https://logo.clearbit.com/facebook.com';
-    case 'line': return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjMDZDNzU1Ii8+CjxwYXRoIGQ9Ik0xMiA2TDEyLjU0IDkuNzNMMTYgMTBMMTIuNTQgMTAuMjdMMTIgMTRMMTEuNDYgMTAuMjdMOCAxMEwxMS40NiA5LjczTDEyIDZaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K'; // LINE@ logo (green with @ symbol)
+    case 'line': return 'https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg'; // LINE Official Account logo
     case 'instagram': return 'https://logo.clearbit.com/instagram.com';
     default: return null;
   }
@@ -126,13 +126,12 @@ const getLogoUrl = (platform) => {
 const PlatformIcon = ({ platform }) => {
   const logoUrl = getLogoUrl(platform);
 
-  // Special handling for LINE@ logo
+  // Special handling for LINE Official Account logo
   if (platform === 'line') {
     return (
       <div className="w-4 h-4 rounded-full bg-[#06C755] flex items-center justify-center border border-white shadow-sm">
-        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M6 1L6.545 4.365L9 5L6.545 5.635L6 9L5.455 5.635L3 5L5.455 4.365L6 1Z" fill="white"/>
-          <circle cx="6" cy="5" r="2" fill="none" stroke="white" strokeWidth="0.5"/>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 5.58 2 10c0 3.02 2.17 5.66 5.38 6.89-.02.34-.14 1.95-.59 2.85-.21.43.18.83.62.6 1.42-.72 3.2-1.95 4.07-2.89.17.01.34.02.52.02 5.52 0 10-3.58 10-8 0-4.42-4.48-8-10-8z"/>
         </svg>
       </div>
     );
@@ -167,13 +166,12 @@ const PlatformIcon = ({ platform }) => {
 const ShopIcon = ({ type }) => {
   if (type === 'all') return <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center"><Flame size={16} fill="currentColor" /></div>;
 
-  // Special handling for LINE@ logo
+  // Special handling for LINE Official Account logo
   if (type === 'line') {
     return (
       <div className="w-8 h-8 rounded-full bg-[#06C755] flex items-center justify-center border border-gray-100 shadow-sm">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M10 2L10.908 7.275L16 8L10.908 8.725L10 14L9.092 8.725L4 8L9.092 7.275L10 2Z" fill="white"/>
-          <circle cx="10" cy="8" r="3" fill="none" stroke="white" strokeWidth="0.8"/>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2C6.48 2 2 5.58 2 10c0 3.02 2.17 5.66 5.38 6.89-.02.34-.14 1.95-.59 2.85-.21.43.18.83.62.6 1.42-.72 3.2-1.95 4.07-2.89.17.01.34.02.52.02 5.52 0 10-3.58 10-8 0-4.42-4.48-8-10-8z"/>
         </svg>
       </div>
     );
